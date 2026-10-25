@@ -1,0 +1,420 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-25T12:00:00Z",
+  "title": "Design System: Listing Repo",
+  "extensions": {
+    "colorMeta": {
+      "ground": {
+        "role": "neutral",
+        "displayName": "Limestone Ground",
+        "canonical": "oklch(95.0% 0.011 84.6)",
+        "tonalRamp": [
+          "#0d0b06",
+          "#27241e",
+          "#433f39",
+          "#615d56",
+          "#807d76",
+          "#a29e97",
+          "#c7c4bc",
+          "#f2eee6"
+        ]
+      },
+      "paper": {
+        "role": "neutral",
+        "displayName": "Paper",
+        "canonical": "oklch(97.1% 0.009 84.6)",
+        "tonalRamp": [
+          "#0d0b07",
+          "#26241f",
+          "#423f3b",
+          "#605d58",
+          "#807d78",
+          "#a19e98",
+          "#c7c4be",
+          "#f1eee8"
+        ]
+      },
+      "stone": {
+        "role": "neutral",
+        "displayName": "Stone",
+        "canonical": "oklch(91.4% 0.017 84.6)",
+        "tonalRamp": [
+          "#0f0b04",
+          "#28231a",
+          "#443f35",
+          "#625d53",
+          "#827d72",
+          "#a39e93",
+          "#c9c3b8",
+          "#f4eee2"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Ink",
+        "canonical": "oklch(14.6% 0.004 285.9)",
+        "tonalRamp": [
+          "#0b0b0d",
+          "#242426",
+          "#3f3f42",
+          "#5d5d60",
+          "#7d7d80",
+          "#9e9ea1",
+          "#c4c4c7",
+          "#eeeef1"
+        ]
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "Ink Soft",
+        "canonical": "oklch(30.0% 0.007 297.4)",
+        "tonalRamp": [
+          "#0b0b0e",
+          "#242327",
+          "#403f43",
+          "#5e5d61",
+          "#7d7c81",
+          "#9f9da2",
+          "#c4c3c8",
+          "#efedf3"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Muted Earth",
+        "canonical": "oklch(46.1% 0.017 74.2)",
+        "tonalRamp": [
+          "#0f0a04",
+          "#29231b",
+          "#453f36",
+          "#635c53",
+          "#837c72",
+          "#a59d93",
+          "#cbc3b8",
+          "#f5ede2"
+        ]
+      },
+      "bronze": {
+        "role": "primary",
+        "displayName": "Bronze",
+        "canonical": "oklch(50.1% 0.083 80.4)",
+        "tonalRamp": [
+          "#120900",
+          "#312100",
+          "#543b03",
+          "#76581f",
+          "#977841",
+          "#b99962",
+          "#e0bf86",
+          "#feecce"
+        ]
+      },
+      "bronze-deep": {
+        "role": "primary",
+        "displayName": "Bronze Deep",
+        "canonical": "oklch(41.4% 0.070 80.7)",
+        "tonalRamp": [
+          "#120a00",
+          "#312102",
+          "#533b0a",
+          "#72592c",
+          "#93794c",
+          "#b59a6c",
+          "#dcc091",
+          "#ffeccd"
+        ]
+      },
+      "gold": {
+        "role": "neutral",
+        "displayName": "Gold Hairline",
+        "canonical": "rgb(211 172 96 / 0.9)",
+        "tonalRamp": [
+          "#110a00",
+          "#302102",
+          "#513c0b",
+          "#78580b",
+          "#9c7727",
+          "#be984c",
+          "#e6be72",
+          "#feeccd"
+        ]
+      },
+      "gold-wash": {
+        "role": "neutral",
+        "displayName": "Gold Wash",
+        "canonical": "rgb(211 172 96 / 0.18)",
+        "tonalRamp": [
+          "#110a00",
+          "#302102",
+          "#513c0b",
+          "#78580b",
+          "#9c7727",
+          "#be984c",
+          "#e6be72",
+          "#feeccd"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "\"Properties\" page heading only; 2.75rem below 640px."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Property name atop the dossier panel."
+      },
+      "headline-section": {
+        "displayName": "Headline Section",
+        "purpose": "Dossier section headings, ruled in gold beneath."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Property names on cards, tiles and rows."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Summaries, help copy, table cells."
+      },
+      "body-value": {
+        "displayName": "Body Value",
+        "purpose": "Dossier field values."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Tracked capitals: top bar, index items."
+      },
+      "label-sm": {
+        "displayName": "Label Small",
+        "purpose": "Row labels, metadata, tooltips, table headers, quiet actions. Smallest sanctioned step."
+      },
+      "data": {
+        "displayName": "Data",
+        "purpose": "Tabular lining numerals for every count, ID and page number."
+      }
+    },
+    "shadows": [
+      {
+        "name": "panel",
+        "value": "-24px 0 48px -24px rgb(10 10 12 / 0.28)",
+        "purpose": "Dossier side panel only, cast leftward over a 25% ink scrim."
+      },
+      {
+        "name": "popover",
+        "value": "0 12px 32px -12px rgb(10 10 12 / 0.25)",
+        "purpose": "Tag picker popover only."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-out-expo",
+        "value": "cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "Panel entrance and card photo hover zoom."
+      },
+      {
+        "name": "panel-in",
+        "value": "420ms ease-out-expo; from translateX(32px), opacity 0",
+        "purpose": "Dossier panel entrance."
+      },
+      {
+        "name": "scrim-in",
+        "value": "300ms ease-out (tooltips 120ms); from opacity 0",
+        "purpose": "Panel scrim and tooltip fade."
+      },
+      {
+        "name": "hover-zoom",
+        "value": "scale(1.035) over 700ms ease-out-expo",
+        "purpose": "Card photo on card hover."
+      },
+      {
+        "name": "shimmer",
+        "value": "1.6s linear infinite; stone to #f1ebe0 to stone at 100deg",
+        "purpose": "Loading placeholders."
+      },
+      {
+        "name": "state",
+        "value": "200-300ms colour and border transitions",
+        "purpose": "Hover and active state changes."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "animation and transition durations 0.01ms",
+        "purpose": "prefers-reduced-motion: reduce."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "xl",
+        "value": "1280px"
+      },
+      {
+        "name": "container",
+        "value": "1440px"
+      }
+    ],
+    "browserSurfaces": {
+      "selection": "rgb(211 172 96 / 0.4) with ink text",
+      "focusRing": "2px solid bronze, offset 2px",
+      "caret": "bronze",
+      "scrollbar": "thin; thumb rgb(124 94 38 / 0.45), track transparent",
+      "links": "underline offset 0.22em, thickness 1px"
+    },
+    "provenance": "Palette, the Cormorant Garamond and Jost pairing, and the LL monogram come from liveluxe.au."
+  },
+  "components": [
+    {
+      "name": "Primary Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Solid ink action in tracked capitals; the only filled button.",
+      "html": "<button class=\"ds-btn-primary\">Try again</button>",
+      "css": ".ds-btn-primary { background: var(--color-ink, #0a0a0c); color: var(--color-paper, #f8f5ef); font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; padding: 10px 16px; border: 0; border-radius: 0; cursor: pointer; transition: background-color .2s; } .ds-btn-primary:hover { background: var(--color-bronze-deep, #5f4719); } .ds-btn-primary:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Secondary Button",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Gold-ruled quiet action beside a primary.",
+      "html": "<button class=\"ds-btn-secondary\">Include archived</button>",
+      "css": ".ds-btn-secondary { background: transparent; color: var(--color-ink, #0a0a0c); font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; padding: 10px 16px; border: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); border-radius: 0; cursor: pointer; } .ds-btn-secondary:hover { background: var(--color-gold-wash, rgb(211 172 96 / 0.18)); } .ds-btn-secondary:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Index Row",
+      "kind": "chip",
+      "refersTo": "index-item",
+      "description": "Signature filter row: bronze row label, tracked-capital items with counts, bronze underline when active.",
+      "html": "<div class=\"ds-index-row\"><span class=\"ds-index-label\">Platform</span><ul class=\"ds-index-items\"><li><button class=\"ds-index-item\" aria-pressed=\"true\">All <span class=\"ds-count\">(121)</span></button></li><li><button class=\"ds-index-item\" aria-pressed=\"false\">Airbnb <span class=\"ds-count\">(82)</span></button></li><li><button class=\"ds-index-item\" aria-pressed=\"false\">Booking.com <span class=\"ds-count\">(89)</span></button></li><li><button class=\"ds-index-item\" aria-pressed=\"false\">Not listed yet <span class=\"ds-count\">(23)</span></button></li></ul></div>",
+      "css": ".ds-index-row { display: flex; align-items: baseline; gap: 20px; background: var(--color-ground, #f2eee6); padding: 20px 0; border-top: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); border-bottom: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); } .ds-index-label { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.625rem; color: var(--color-bronze, #7c5e26); width: 80px; flex-shrink: 0; } .ds-index-items { display: flex; flex-wrap: wrap; gap: 0 24px; list-style: none; margin: 0; padding: 0; } .ds-index-item { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; display: flex; align-items: baseline; gap: 6px; padding: 6px 0; background: none; border: 0; border-bottom: 1px solid transparent; color: var(--color-muted, #5e574e); cursor: pointer; white-space: nowrap; transition: color .2s, border-color .2s; } .ds-index-item:hover { border-bottom-color: var(--color-gold, rgb(211 172 96 / 0.9)); color: var(--color-ink, #0a0a0c); } .ds-index-item[aria-pressed=\"true\"] { border-bottom-color: var(--color-bronze, #7c5e26); color: var(--color-ink, #0a0a0c); } .ds-index-item .ds-count { font-weight: 400; font-variant-numeric: tabular-nums lining-nums; } .ds-index-item[aria-pressed=\"true\"] .ds-count { color: var(--color-bronze, #7c5e26); } .ds-index-item:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Search Field",
+      "kind": "input",
+      "refersTo": "search-field",
+      "description": "Gold underline only; turns bronze on focus.",
+      "html": "<label class=\"ds-search\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"11\" cy=\"11\" r=\"8\"/><path d=\"m21 21-4.3-4.3\"/></svg><input type=\"search\" placeholder=\"Name, address, area, tag or Listing ID\" aria-label=\"Search properties\"></label>",
+      "css": ".ds-search { position: relative; display: block; max-width: 576px; color: var(--color-muted, #5e574e); } .ds-search svg { position: absolute; left: 0; top: 50%; transform: translateY(-50%); } .ds-search input { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; width: 100%; height: 48px; padding: 0 36px 0 32px; font-size: 1rem; color: var(--color-ink, #0a0a0c); background: transparent; border: 0; border-bottom: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); border-radius: 0; outline: none; caret-color: var(--color-bronze, #7c5e26); transition: border-color .2s; } .ds-search input::placeholder { color: var(--color-muted, #5e574e); opacity: 1; } .ds-search input:focus { border-bottom-color: var(--color-bronze, #7c5e26); }"
+    },
+    {
+      "name": "View Switch",
+      "kind": "nav",
+      "refersTo": "view-switch-option",
+      "description": "Segmented radio group in one gold border; active option solid ink.",
+      "html": "<div class=\"ds-views\" role=\"radiogroup\" aria-label=\"View\"><button role=\"radio\" aria-checked=\"true\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\"/><path d=\"M3 9h18M3 15h18\"/></svg>Card</button><button role=\"radio\" aria-checked=\"false\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\"/><path d=\"M3 9h18M3 15h18\"/></svg>Tile</button><button role=\"radio\" aria-checked=\"false\"><svg width=\"14\" height=\"14\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.75\" aria-hidden=\"true\"><rect width=\"18\" height=\"18\" x=\"3\" y=\"3\"/><path d=\"M3 9h18M3 15h18\"/></svg>List</button></div>",
+      "css": ".ds-views { display: inline-flex; border: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); } .ds-views button { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.625rem; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 12px; background: transparent; color: var(--color-muted, #5e574e); border: 0; border-radius: 0; cursor: pointer; transition: background-color .2s, color .2s; } .ds-views button:hover { background: var(--color-gold-wash, rgb(211 172 96 / 0.18)); color: var(--color-ink, #0a0a0c); } .ds-views button[aria-checked=\"true\"] { background: var(--color-ink, #0a0a0c); color: var(--color-paper, #f8f5ef); } .ds-views button:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Tag",
+      "kind": "chip",
+      "refersTo": "tag",
+      "description": "Ordinary small label with a gold border; overflow becomes \"+N more\".",
+      "html": "<ul class=\"ds-tags\"><li class=\"ds-tag\">Active</li><li class=\"ds-tag\">Airbnb</li><li class=\"ds-tag\">Hybrid Management</li><li class=\"ds-tag-more\">+3 more</li></ul>",
+      "css": ".ds-tags { display: flex; flex-wrap: wrap; gap: 6px; list-style: none; margin: 0; padding: 0; font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; } .ds-tag { border: 1px solid rgb(211 172 96 / 0.7); background: rgb(248 245 239 / 0.6); color: var(--color-ink-soft, #2e2d31); padding: 2px 8px; font-size: 0.75rem; line-height: 1.25rem; border-radius: 0; } .ds-tag-more { padding: 2px 4px; font-size: 0.75rem; line-height: 1.25rem; color: var(--color-muted, #5e574e); }"
+    },
+    {
+      "name": "Platform Bubbles",
+      "kind": "custom",
+      "refersTo": "platform-bubble",
+      "description": "Round seals with platform initials; linked seals invert to ink on hover.",
+      "html": "<ul class=\"ds-seals\" aria-label=\"Listed on\"><li><a class=\"ds-seal\" href=\"#\" aria-label=\"Open on Airbnb\">A</a></li><li><a class=\"ds-seal\" href=\"#\" aria-label=\"Open on Booking.com\"><span class=\"ds-seal-3\">BDC</span></a></li><li><span class=\"ds-seal\" role=\"img\" aria-label=\"Listed on Vrbo\" tabindex=\"0\">V</span></li></ul>",
+      "css": ".ds-seals { display: flex; gap: 6px; list-style: none; margin: 0; padding: 0; } .ds-seal { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; display: inline-grid; place-items: center; width: 28px; height: 28px; border-radius: 9999px; border: 1px solid var(--color-gold, rgb(211 172 96 / 0.9)); background: var(--color-paper, #f8f5ef); color: var(--color-ink-soft, #2e2d31); font-size: 0.625rem; font-weight: 500; letter-spacing: 0.08em; text-decoration: none; transition: background-color .2s, color .2s, border-color .2s; } .ds-seal-3 { font-size: 0.5625rem; letter-spacing: 0.02em; } a.ds-seal:hover { background: var(--color-ink, #0a0a0c); color: var(--color-paper, #f8f5ef); border-color: var(--color-bronze, #7c5e26); } .ds-seal:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; }"
+    },
+    {
+      "name": "Property Card",
+      "kind": "card",
+      "refersTo": "property-card",
+      "description": "Gold-edged card, photo well left; hover turns the edge bronze and the fill paper. No shadow.",
+      "html": "<article class=\"ds-card\"><div class=\"ds-card-photo\"></div><div class=\"ds-card-body\"><h2 class=\"ds-card-name\">2/104 Coventry Street</h2><p class=\"ds-card-meta\"><span class=\"ds-id\">Listing 522230</span><span>Southbank</span></p><p class=\"ds-card-summary\">Nestled in leafy South Melbourne, this charming two-bedroom apartment.</p></div></article>",
+      "css": ".ds-card { display: grid; grid-template-columns: minmax(0,38%) 1fr; min-height: 208px; max-width: 360px; border: 1px solid rgb(211 172 96 / 0.55); background: rgb(248 245 239 / 0.4); border-radius: 0; transition: border-color .3s, background-color .3s; cursor: pointer; } .ds-card:hover { border-color: var(--color-bronze, #7c5e26); background: var(--color-paper, #f8f5ef); } .ds-card-photo { background: var(--color-stone, #e8e2d6); } .ds-card-body { display: flex; flex-direction: column; gap: 10px; padding: 20px; } .ds-card-name { font-family: 'Cormorant Garamond', 'Times New Roman', serif; font-size: 1.3rem; line-height: 1.15; font-weight: 600; color: var(--color-ink, #0a0a0c); margin: 0; } .ds-card-meta { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-size: 0.6875rem; font-weight: 500; letter-spacing: 0.2em; text-transform: uppercase; font-size: 0.625rem; font-variant-numeric: tabular-nums; display: flex; flex-wrap: wrap; gap: 4px 12px; margin: 0; color: var(--color-ink-soft, #2e2d31); } .ds-card-meta .ds-id { color: var(--color-bronze, #7c5e26); } .ds-card-summary { font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; margin: auto 0 0; font-size: 0.875rem; line-height: 1.625; color: var(--color-muted, #5e574e); }"
+    },
+    {
+      "name": "Pagination",
+      "kind": "nav",
+      "refersTo": "page-step",
+      "description": "36px square steps; current page solid ink.",
+      "html": "<nav class=\"ds-pages\" aria-label=\"Pagination\"><button aria-current=\"page\">1</button><button>2</button><button>3</button><span aria-hidden=\"true\">…</span><button>6</button></nav>",
+      "css": ".ds-pages { display: flex; align-items: center; gap: 4px; font-family: 'Jost', 'Helvetica Neue', Arial, sans-serif; font-variant-numeric: tabular-nums lining-nums; } .ds-pages button { display: grid; place-items: center; min-width: 36px; height: 36px; padding: 0 8px; font: inherit; font-size: 0.875rem; color: var(--color-ink, #0a0a0c); background: transparent; border: 0; border-radius: 0; cursor: pointer; transition: background-color .2s; } .ds-pages button:hover { background: var(--color-gold-wash, rgb(211 172 96 / 0.18)); } .ds-pages button[aria-current=\"page\"] { background: var(--color-ink, #0a0a0c); color: var(--color-paper, #f8f5ef); } .ds-pages button:focus-visible { outline: 2px solid var(--color-bronze, #7c5e26); outline-offset: 2px; } .ds-pages span { padding: 0 4px; color: var(--color-muted, #5e574e); }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The House Index",
+    "overview": "The browse surface is Live Luxe's own portfolio index, set in the same voice as liveluxe.au: limestone ground, ink type, bronze for whatever is active, and gold hairlines ruling the page like a printed register. It deliberately refuses the grey SaaS admin grid with a blue accent and a filter sidebar. Filters are not a sidebar of checkboxes; they are the brand site's precinct index turned into rows of tracked capitals with counts, underlined in bronze when chosen.\n\nTwo voices carry everything. Cormorant Garamond at 600 names things: the page heading, every property name, the panel's section headings. Jost does the work: controls, values, metadata, counts. The density is that of an office reference tool used mid-task by about five people: cards three across at 1440px, a field dossier that reads as one long scroll, nothing decorative that slows a look-up.\n\nPalette, fonts and the LL monogram are brand provenance taken from liveluxe.au, not invented here. The monogram is used as an inline SVG in the top bar (`currentColor`) and as the favicon (gold monogram on an ink square).",
+    "keyCharacteristics": [
+      "Limestone ground, paper raised surfaces, stone image wells.",
+      "Gold 1px hairlines are the only dividers; bronze marks state; solid ink is the only filled control.",
+      "Cormorant Garamond 600 for names and headings, Jost for operation, tracked Jost capitals for metadata.",
+      "Square corners everywhere except the round platform seals.",
+      "Flat at rest; only the floating panel and popover cast a shadow."
+    ],
+    "rules": [
+      {
+        "name": "The Gold Hairline Rule",
+        "body": "Every divider and every control border is a 1px gold line. Inner rules use the same gold at reduced strength (60% inside the popover, 55% on card edges, 45% between rows, 35% between dossier fields). Gold never fills a surface and is never text.",
+        "section": "colors"
+      },
+      {
+        "name": "The Gold Carries Nothing Rule",
+        "body": "Gold sits at about 1.7:1 against the ground, so it frames but never signals. Any state a person must perceive is carried by bronze, ink, or text, never by gold alone.",
+        "section": "colors"
+      },
+      {
+        "name": "The Bronze Means Here Rule",
+        "body": "Bronze marks where you are and what is chosen: active underline, focus ring, caret, current section in the dossier index. Do not spend it on decoration.",
+        "section": "colors"
+      },
+      {
+        "name": "The Two Voices Rule",
+        "body": "Cormorant names things; Jost operates them. Never set a control, a count or a piece of metadata in the serif, and never set a property name in the sans.",
+        "section": "typography"
+      },
+      {
+        "name": "The Tracked Capitals Rule",
+        "body": "Metadata is Jost 500 uppercase at 0.2em tracking, with counts in parentheses beside the label (\"AIRBNB (82)\"). Numbers are always tabular. Label Small (0.625rem) is the smallest sanctioned step.",
+        "section": "typography"
+      },
+      {
+        "name": "The Resting Flat Rule",
+        "body": "Cards, tiles, rows, inputs and buttons have no shadow at rest or on hover. Hover answers with a bronze border and a paper fill, not with lift.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Square Rule",
+        "body": "Nothing is rounded except the platform seal.",
+        "section": "shapes"
+      },
+      {
+        "name": "The Muted Floor Rule",
+        "body": "Muted Earth at full strength is the lightest text colour in the system. Never lighten text below it with opacity or a paler tone; the only exception is a disabled control.",
+        "section": "components"
+      }
+    ],
+    "dos": [
+      "Do rule sections, rows and controls with 1px gold hairlines, using reduced-strength gold for inner rules.",
+      "Do mark active and chosen state with bronze (underline, left rule, focus ring) and filled selection with solid ink and paper text.",
+      "Do set property names and headings in Cormorant Garamond 600, and everything operational in Jost.",
+      "Do set metadata in tracked Jost capitals at 0.2em with tabular counts in parentheses.",
+      "Do keep every corner square; reserve the circle for platform seals.",
+      "Do keep text at Muted Earth or darker, and keep Label Small (0.625rem) as the smallest step.",
+      "Do honour `prefers-reduced-motion` and give every motion the expo-out curve or a linear shimmer."
+    ],
+    "donts": [
+      "Don't build the grey SaaS admin grid with a blue accent and a filter sidebar; filters live in the index rows.",
+      "Don't use gold as text, as a fill, or as the only signal of a state.",
+      "Don't put shadows on cards, tiles, rows, inputs or buttons; only the dossier panel and the tag popover float.",
+      "Don't round corners on anything but the platform seal.",
+      "Don't fade muted text with opacity to make it quieter.",
+      "Don't separate wrapping metadata with dots; tell the items apart by colour."
+    ]
+  }
+}

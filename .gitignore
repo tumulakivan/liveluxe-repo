@@ -1,0 +1,17 @@
+node_modules/
+dist/
+data/
+.env
+.env.*
+!.env.example
+*.log
+
+# Impeccable working files
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/tmp/
+.impeccable/config.local.json
+.claude/skills/impeccable/scripts/bin/
+
+# Local reference images (some are third-party designs)
+claude-ref/

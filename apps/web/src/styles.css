@@ -1,0 +1,110 @@
+@import 'tailwindcss';
+
+/* Live Luxe house voice: Cormorant Garamond for names and headings, Jost for operation. Self-hosted. */
+@import '@fontsource/cormorant-garamond/600.css';
+@import '@fontsource/jost/400.css';
+@import '@fontsource/jost/500.css';
+
+@theme {
+  --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
+  --font-sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
+
+  /* Palette from liveluxe.au */
+  --color-ground: #f2eee6; /* limestone page */
+  --color-paper: #f8f5ef; /* raised surfaces: panel, inputs */
+  --color-stone: #e8e2d6; /* image wells, skeletons */
+  --color-ink: #0a0a0c;
+  --color-ink-soft: #2e2d31;
+  --color-muted: #5e574e;
+  --color-bronze: #7c5e26;
+  --color-bronze-deep: #5f4719;
+  --color-gold: rgb(211 172 96 / 0.9); /* hairlines only */
+  --color-gold-wash: rgb(211 172 96 / 0.18);
+
+  --tracking-caps: 0.2em;
+  --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  html {
+    background: var(--color-ground);
+    color: var(--color-ink-soft);
+    font-family: var(--font-sans);
+    font-weight: 400;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    scrollbar-color: rgb(124 94 38 / 0.45) transparent;
+    scrollbar-width: thin;
+  }
+
+  ::selection {
+    background: rgb(211 172 96 / 0.4);
+    color: var(--color-ink);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-bronze);
+    outline-offset: 2px;
+  }
+
+  input::placeholder {
+    color: var(--color-muted);
+    opacity: 1;
+  }
+
+  input,
+  textarea {
+    caret-color: var(--color-bronze);
+  }
+
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: 1px;
+  }
+}
+
+@utility caps {
+  font-family: var(--font-sans);
+  font-size: 0.6875rem;
+  font-weight: 500;
+  letter-spacing: var(--tracking-caps);
+  text-transform: uppercase;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums lining-nums;
+}
+
+/* Loading placeholder: a slow light passing over stone. */
+@utility shimmer {
+  background: linear-gradient(100deg, var(--color-stone) 40%, #f1ebe0 50%, var(--color-stone) 60%) 0 0 / 300% 100%;
+  animation: shimmer 1.6s linear infinite;
+}
+
+@keyframes shimmer {
+  to {
+    background-position: -150% 0;
+  }
+}
+
+@keyframes panel-in {
+  from {
+    transform: translateX(32px);
+    opacity: 0;
+  }
+}
+
+@keyframes scrim-in {
+  from {
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}

@@ -1,0 +1,27 @@
+{
+  "name": "@repo/api",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node --watch src/index.ts",
+    "start": "node src/index.ts",
+    "sync": "node src/sync-cli.ts",
+    "typecheck": "tsc -p .",
+    "admin": "node src/admin-cli.ts",
+    "fill:import": "node src/fill-import.ts"
+  },
+  "dependencies": {
+    "@fontsource/cormorant-garamond": "^5.3.0",
+    "@fontsource/jost": "^5.3.0",
+    "@hono/node-server": "^1.19.0",
+    "@repo/shared": "workspace:*",
+    "hono": "^4.10.0",
+    "pdfkit": "^0.20.2",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "@types/pdfkit": "^0.17.7",
+    "typescript": "^5.9.0"
+  }
+}
