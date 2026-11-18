@@ -7,7 +7,7 @@ export function Tags({ tags, max, className }: { tags: string[]; max?: number; c
   return (
     <ul className={clsx('flex flex-wrap gap-1.5', className)} aria-label="Tags">
       {shown.map((t) => (
-        <li key={t} className="border border-gold/70 bg-paper/60 px-2 py-0.5 text-xs leading-5 text-ink-soft">
+        <li key={t} title={t} className="max-w-full truncate border border-gold/70 bg-paper/60 px-2 py-0.5 text-xs leading-5 text-ink-soft">
           {t}
         </li>
       ))}

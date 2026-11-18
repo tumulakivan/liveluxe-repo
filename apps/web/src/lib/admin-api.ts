@@ -11,15 +11,9 @@ import type {
 } from '@repo/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 
-export class ApiError extends Error {
-  constructor(
-    message: string,
-    readonly status: number,
-    readonly code?: string,
-  ) {
-    super(message);
-  }
-}
+import { ApiError, fetchJson } from './http.ts';
+
+export { ApiError };
 
 async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   const headers = new Headers(init.headers);
@@ -27,10 +21,7 @@ async function request<T>(url: string, init: RequestInit = {}): Promise<T> {
   // Every write carries this header; the server refuses writes without it (CSRF guard).
   if (init.method && init.method !== 'GET') headers.set('X-Listing-Repo', '1');
   if (init.body && !(init.body instanceof FormData)) headers.set('Content-Type', 'application/json');
-  const res = await fetch(url, { ...init, headers, credentials: 'same-origin' });
-  const body = (await res.json().catch(() => null)) as (T & { error?: string; code?: string }) | null;
-  if (!res.ok) throw new ApiError(body?.error ?? `Request failed (${res.status})`, res.status, body?.code);
-  return body as T;
+  return fetchJson<T>(url, { ...init, headers, credentials: 'same-origin' });
 }
 
 const json = (method: string, body?: unknown): RequestInit => ({ method, body: body === undefined ? undefined : JSON.stringify(body) });

@@ -12,6 +12,7 @@ import {
   useTokens,
   type ApiToken,
 } from '../lib/admin-api.ts';
+import { copyText } from '../lib/clipboard.ts';
 import { formatWhen } from '../lib/format.ts';
 import { PageHeading } from './AdminShell.tsx';
 
@@ -102,7 +103,7 @@ function TokensSection() {
   const revoke = useRevokeToken();
   const [name, setName] = useState('Claude fill');
   const [fresh, setFresh] = useState<string | null>(null);
-  const [copied, setCopied] = useState(false);
+  const [copied, setCopied] = useState<boolean | 'failed'>(false);
   const [confirm, setConfirm] = useState<number | null>(null);
   const id = useId();
   const list = tokens.data ?? [];
@@ -121,14 +122,15 @@ function TokensSection() {
       {fresh && (
         <div role="status" className="mb-6 flex flex-col gap-3 border-y border-gold bg-paper px-4 py-4">
           <p className="text-sm text-ink">Copy this token now. It won’t be shown again.</p>
+          {copied === 'failed' && <Notice>The browser wouldn’t copy it. Select the token and copy it by hand.</Notice>}
           <div className="flex flex-wrap items-center gap-3">
-            <code className="tabular min-w-0 border border-gold bg-ground px-3 py-2 text-[0.8125rem] [overflow-wrap:anywhere] text-ink">{fresh}</code>
+            <code className="tabular min-w-0 select-all border border-gold bg-ground px-3 py-2 text-[0.8125rem] [overflow-wrap:anywhere] text-ink">{fresh}</code>
             <Button
               variant="secondary"
-              onClick={() => navigator.clipboard?.writeText(fresh).then(() => setCopied(true))}
+              onClick={() => copyText(fresh).then((ok) => setCopied(ok || 'failed'))}
             >
-              {copied ? <Check aria-hidden className="size-4" strokeWidth={2} /> : <Copy aria-hidden className="size-4" strokeWidth={1.5} />}
-              {copied ? 'Copied' : 'Copy'}
+              {copied === true ? <Check aria-hidden className="size-4" strokeWidth={2} /> : <Copy aria-hidden className="size-4" strokeWidth={1.5} />}
+              {copied === true ? 'Copied' : 'Copy'}
             </Button>
             <Button variant="quiet" onClick={() => (setFresh(null), setCopied(false))}>
               Done

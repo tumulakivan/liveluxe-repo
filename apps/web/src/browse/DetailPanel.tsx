@@ -17,7 +17,9 @@ import { useAdminProperty, useMe } from '../lib/admin-api.ts';
 import { useProperty } from '../lib/api.ts';
 import { AdminTools } from './AdminTools.tsx';
 import { FieldEditor } from './FieldEditor.tsx';
+import { copyText } from '../lib/clipboard.ts';
 import { formatValue, formatWhen } from '../lib/format.ts';
+import { ApiError } from '../lib/http.ts';
 import { scrollBehavior } from '../lib/motion.ts';
 
 // The property dossier: every field, grouped by section, in one scroll with a sticky index.
@@ -60,21 +62,30 @@ const SOURCE_LABEL: Record<FieldValue['source'], string> = {
 };
 
 function CopyButton({ text, label }: { text: string; label: string }) {
-  const [done, setDone] = useState(false);
+  const [result, setResult] = useState<'copied' | 'failed' | null>(null);
   useEffect(() => {
-    if (!done) return;
-    const t = setTimeout(() => setDone(false), 1600);
+    if (!result) return;
+    const t = setTimeout(() => setResult(null), 2400);
     return () => clearTimeout(t);
-  }, [done]);
+  }, [result]);
   return (
-    <button
-      type="button"
-      onClick={() => navigator.clipboard?.writeText(text).then(() => setDone(true))}
-      aria-label={done ? `${label} copied` : `Copy ${label}`}
-      className="grid size-7 shrink-0 place-items-center text-muted opacity-0 transition-opacity group-hover/field:opacity-100 [@media(hover:none)]:opacity-100 hover:text-bronze focus-visible:opacity-100"
-    >
-      {done ? <Check aria-hidden className="size-3.5 text-bronze" strokeWidth={2} /> : <Copy aria-hidden className="size-3.5" strokeWidth={1.5} />}
-    </button>
+    <>
+      <button
+        type="button"
+        onClick={() => copyText(text).then((ok) => setResult(ok ? 'copied' : 'failed'))}
+        aria-label={`Copy ${label}`}
+        className={clsx(
+          'grid size-7 shrink-0 place-items-center text-muted transition-opacity group-hover/field:opacity-100 hover:text-bronze focus-visible:opacity-100 [@media(hover:none)]:opacity-100',
+          result ? 'opacity-100' : 'opacity-0',
+        )}
+      >
+        {result === 'copied' ? <Check aria-hidden className="size-3.5 text-bronze" strokeWidth={2} /> : <Copy aria-hidden className="size-3.5" strokeWidth={1.5} />}
+      </button>
+      {/* Announced; shown when copying fails so the value can be selected by hand instead. */}
+      <span role="status" className={clsx('self-center text-[0.6875rem]', result === 'failed' ? 'text-danger' : 'sr-only')}>
+        {result === 'copied' ? `${label} copied` : result === 'failed' ? "Couldn't copy. Select the text instead." : ''}
+      </span>
+    </>
   );
 }
 
@@ -146,7 +157,7 @@ function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue |
           <Tags tags={value.value as string[]} />
         ) : (
           <span className="flex items-start gap-1">
-            <span className="tabular min-w-0 [overflow-wrap:anywhere] text-ink">{text}</span>
+            <span className="tabular min-w-0 select-all [overflow-wrap:anywhere] text-ink">{text}</span>
             {def.type === 'text' && <CopyButton text={text} label={def.label} />}
           </span>
         )}
@@ -257,7 +268,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
           )}
         </div>
         <div className="flex min-w-0 flex-col gap-3 pr-8">
-          <Dialog.Title className="font-display text-[1.9rem] leading-[1.08] font-semibold tracking-[-0.005em] text-ink">{p.name}</Dialog.Title>
+          <Dialog.Title className="font-display text-[1.9rem] leading-[1.08] font-semibold tracking-[-0.005em] [overflow-wrap:anywhere] text-ink">{p.name}</Dialog.Title>
           <Dialog.Description className="caps tabular flex flex-wrap gap-x-2 text-[0.625rem] text-bronze">
             <span>{p.hostawayId ? `Listing ${p.hostawayId}` : 'Not in Hostaway yet'}</span>
             {p.city && <span>· {p.city}</span>}
@@ -349,10 +360,19 @@ export function DetailPanel({ id, onClose, mode = 'view' }: { id: number | null;
               <div className="shimmer h-4 w-1/3" />
               <div className="shimmer mt-6 h-64 w-full" />
             </div>
+          ) : isError && error instanceof ApiError && error.status === 404 ? (
+            // An old or mistyped link (?p=…), or a property removed since the page loaded.
+            <div className="p-8 pr-16">
+              <Dialog.Title className="font-display text-2xl font-semibold text-ink">This property isn't in the repo</Dialog.Title>
+              <Dialog.Description className="mt-3 max-w-[52ch] text-sm text-muted">
+                It may have been removed, or the link is out of date. Close this panel to search the properties.
+              </Dialog.Description>
+              <Dialog.Close className="caps mt-6 bg-ink px-4 py-2.5 text-paper hover:bg-bronze-deep">Back to properties</Dialog.Close>
+            </div>
           ) : isError ? (
-            <div className="p-8">
+            <div className="p-8 pr-16">
               <Dialog.Title className="font-display text-2xl font-semibold text-ink">This property couldn't be loaded</Dialog.Title>
-              <Dialog.Description className="mt-3 text-sm text-muted">{error.message}. Check your connection, then try again.</Dialog.Description>
+              <Dialog.Description className="mt-3 max-w-[52ch] text-sm text-muted">{error.message}</Dialog.Description>
               <button type="button" onClick={() => refetch()} className="caps mt-6 bg-ink px-4 py-2.5 text-paper hover:bg-bronze-deep">
                 Try again
               </button>

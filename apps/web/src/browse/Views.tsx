@@ -15,7 +15,7 @@ function OpenName({ p, onOpen, className }: { p: PropertySummary; onOpen: Open; 
         type="button"
         data-open-id={p.id}
         onClick={() => onOpen(p.id)}
-        className="text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-bronze"
+        className="text-left [overflow-wrap:anywhere] after:absolute after:inset-0 after:content-[''] focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-bronze"
       >
         {p.name}
       </button>

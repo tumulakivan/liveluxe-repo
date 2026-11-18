@@ -1,15 +1,9 @@
 import type { FacetsResponse, ListResponse, PropertyDetail } from '@repo/shared';
 import { keepPreviousData, useQuery } from '@tanstack/react-query';
 import type { BrowseState } from './browse-state.ts';
+import { fetchJson } from './http.ts';
 
-async function getJson<T>(url: string): Promise<T> {
-  const res = await fetch(url, { headers: { Accept: 'application/json' } });
-  if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { error?: string } | null;
-    throw new Error(body?.error ?? `Request failed (${res.status})`);
-  }
-  return res.json() as Promise<T>;
-}
+const getJson = <T,>(url: string) => fetchJson<T>(url, { headers: { Accept: 'application/json' } });
 
 function listParams(s: BrowseState, withPaging: boolean): string {
   const p = new URLSearchParams();

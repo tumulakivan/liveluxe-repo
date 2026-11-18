@@ -16,17 +16,19 @@ function FilterDropdown({
   selected,
   onChange,
   searchable,
+  emptyText,
 }: {
   label: string;
   options: FilterOption[];
   selected: string[];
   onChange: (next: string[]) => void;
   searchable?: boolean;
+  emptyText?: string;
 }) {
   const names = new Map(options.map((o) => [o.value, o.label]));
   const first = selected[0];
   const summary =
-    selected.length === 0 ? 'All' : selected.length === 1 && first ? (names.get(first) ?? first) : `${selected.length} selected`;
+    selected.length === 0 ? 'All' : selected.length === 1 && first ? (names.get(first) ?? (first === NOT_LISTED ? 'Not listed yet' : first)) : `${selected.length} selected`;
   const active = selected.length > 0;
 
   return (
@@ -36,6 +38,7 @@ function FilterDropdown({
       selected={selected}
       onChange={onChange}
       searchable={searchable}
+      emptyText={emptyText}
       showAll
       trigger={
         // Phones: three equal columns with the label stacked over the value. Wider: one line each.
@@ -151,19 +154,23 @@ const NOT_LISTED = '__not_listed__';
 export function FilterRows({
   state,
   facets,
+  facetsFailed,
   update,
 }: {
   state: BrowseState;
   facets: FacetsResponse | undefined;
+  /** The choices failed to load; say so instead of showing empty lists. */
+  facetsFailed?: boolean;
   update: (patch: Partial<BrowseState>) => void;
 }) {
   const toOptions = (list: FacetCount[] | undefined): FilterOption[] =>
     (list ?? []).map((f) => ({ value: f.value, label: f.label, hint: f.count }));
 
-  const platformOptions: FilterOption[] = [
-    ...toOptions(facets?.platforms),
-    { value: NOT_LISTED, label: 'Not listed yet', hint: facets?.notListed },
-  ];
+  // "Not listed yet" joins only once the real platforms have loaded, so a failed load reads as empty.
+  const platformOptions: FilterOption[] = facets
+    ? [...toOptions(facets.platforms), { value: NOT_LISTED, label: 'Not listed yet', hint: facets.notListed }]
+    : [];
+  const emptyText = facetsFailed ? 'Couldn’t load the choices. Reload the page to try again.' : facets ? undefined : 'Loading…';
   const cityOptions = toOptions(facets?.cities);
   const tagOptions = toOptions(facets?.tags);
 
@@ -171,7 +178,8 @@ export function FilterRows({
   const setPlatforms = (next: string[]) =>
     update({ platforms: next.filter((v) => v !== NOT_LISTED), notListed: next.includes(NOT_LISTED) });
 
-  const nameOf = (opts: FilterOption[], v: string) => opts.find((o) => o.value === v)?.label ?? v;
+  const nameOf = (opts: FilterOption[], v: string) =>
+    opts.find((o) => o.value === v)?.label ?? (v === NOT_LISTED ? 'Not listed yet' : v);
   const chips = [
     ...platformSelected.map((v) => ({
       key: `p:${v}`,
@@ -193,15 +201,16 @@ export function FilterRows({
   return (
     <div className="flex flex-col gap-3">
       <div className="grid grid-cols-3 gap-2 sm:flex sm:flex-wrap sm:items-center sm:gap-3">
-        <FilterDropdown label="Platform" options={platformOptions} selected={platformSelected} onChange={setPlatforms} />
+        <FilterDropdown label="Platform" options={platformOptions} selected={platformSelected} onChange={setPlatforms} emptyText={emptyText} />
         <FilterDropdown
           label="Area"
           options={cityOptions}
           selected={state.cities}
           onChange={(cities) => update({ cities })}
           searchable={cityOptions.length > 8}
+          emptyText={emptyText}
         />
-        <FilterDropdown label="Tags" options={tagOptions} selected={state.tags} onChange={(tags) => update({ tags })} searchable />
+        <FilterDropdown label="Tags" options={tagOptions} selected={state.tags} onChange={(tags) => update({ tags })} searchable emptyText={emptyText} />
       </div>
       {chips.length > 0 && (
         <div className="flex flex-wrap items-center gap-2" aria-label="Chosen filters">

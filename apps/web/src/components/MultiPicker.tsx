@@ -24,6 +24,7 @@ export function ChecklistPopover({
   onChange,
   searchable,
   findLabel,
+  emptyText,
   showAll,
   width = 'w-72',
 }: {
@@ -36,6 +37,8 @@ export function ChecklistPopover({
   searchable?: boolean;
   /** Placeholder and screen-reader name of the find field; defaults to "Find <label>". */
   findLabel?: string;
+  /** Shown in place of the list when there are no options (for example, they failed to load). */
+  emptyText?: string;
   /** Offer a "Show all" reset at the foot of the list while anything is chosen. */
   showAll?: boolean;
   width?: string;
@@ -90,7 +93,7 @@ export function ChecklistPopover({
               );
             })}
             {shown.length === 0 && (
-              <li className="px-3 py-3 text-sm text-muted">{query ? `Nothing matches “${query}”.` : 'Nothing to choose yet.'}</li>
+              <li className="px-3 py-3 text-sm text-muted">{query ? `Nothing matches “${query}”.` : (emptyText ?? 'Nothing to choose yet.')}</li>
             )}
           </ul>
           {showAll && selected.length > 0 && (

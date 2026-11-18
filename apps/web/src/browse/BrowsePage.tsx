@@ -45,7 +45,7 @@ export function BrowsePage() {
           </div>
 
           <div className="border-y border-gold py-5">
-            <FilterRows state={state} facets={facets.data} update={update} />
+            <FilterRows state={state} facets={facets.data} facetsFailed={facets.isError} update={update} />
           </div>
 
           <div ref={resultsTop} className="-mt-2 flex scroll-mt-6 flex-wrap items-center justify-between gap-x-6 gap-y-3">
@@ -75,7 +75,7 @@ export function BrowsePage() {
             ) : list.isError ? (
               <div role="alert" className="border border-gold bg-paper px-6 py-10">
                 <h2 className="font-display text-2xl font-semibold text-ink">Properties couldn't be loaded</h2>
-                <p className="mt-2 text-sm text-muted">{list.error.message}. Check your connection, then try again.</p>
+                <p className="mt-2 text-sm text-muted">{list.error.message}</p>
                 <button type="button" onClick={() => list.refetch()} className="caps mt-5 bg-ink px-4 py-2.5 text-paper hover:bg-bronze-deep">
                   Try again
                 </button>
