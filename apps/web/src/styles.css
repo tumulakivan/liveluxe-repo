@@ -10,16 +10,16 @@
   --font-sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
 
   /* Palette from liveluxe.au */
-  --color-ground: #f2eee6; /* limestone page */
-  --color-paper: #f8f5ef; /* raised surfaces: panel, inputs */
-  --color-stone: #e8e2d6; /* image wells, skeletons */
+  --color-ground: #eef0f2; /* cool grey page */
+  --color-paper: #f8f9fa; /* raised surfaces: panel, inputs */
+  --color-stone: #e1e4e8; /* image wells, skeletons */
   --color-ink: #0a0a0c;
   --color-ink-soft: #2e2d31;
-  --color-muted: #5e574e;
+  --color-muted: #555a62;
   --color-bronze: #7c5e26;
   --color-bronze-deep: #5f4719;
-  --color-gold: rgb(211 172 96 / 0.9); /* hairlines only */
-  --color-gold-wash: rgb(211 172 96 / 0.18);
+  --color-gold: rgb(168 175 186 / 0.75); /* hairlines only (cool grey) */
+  --color-gold-wash: rgb(140 152 168 / 0.14);
 
   --tracking-caps: 0.2em;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -33,12 +33,12 @@
     font-weight: 400;
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
-    scrollbar-color: rgb(124 94 38 / 0.45) transparent;
+    scrollbar-color: rgb(85 90 98 / 0.4) transparent;
     scrollbar-width: thin;
   }
 
   ::selection {
-    background: rgb(211 172 96 / 0.4);
+    background: rgb(150 166 188 / 0.4);
     color: var(--color-ink);
   }
 
@@ -77,7 +77,7 @@
 
 /* Loading placeholder: a slow light passing over stone. */
 @utility shimmer {
-  background: linear-gradient(100deg, var(--color-stone) 40%, #f1ebe0 50%, var(--color-stone) 60%) 0 0 / 300% 100%;
+  background: linear-gradient(100deg, var(--color-stone) 40%, #eef0f3 50%, var(--color-stone) 60%) 0 0 / 300% 100%;
   animation: shimmer 1.6s linear infinite;
 }
 

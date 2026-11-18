@@ -5,96 +5,79 @@ import { Check, ChevronDown, LayoutGrid, List, Rows3, Search, X } from 'lucide-r
 import { useEffect, useState } from 'react';
 import type { BrowseState, SortMode, ViewMode } from '../lib/browse-state.ts';
 
-// The index rows: the brand site's precinct index turned into filters.
-// Tracked capitals with counts, bronze underline when active.
+// Filters: a row of multi-select dropdowns (Platform, Area, Tags). Each opens a checklist with
+// counts; chosen values also show as removable chips under the row.
 
-function IndexItem({
-  label,
-  count,
-  active,
-  onClick,
-}: {
+interface FilterOption {
+  value: string;
   label: string;
   count?: number;
-  active: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <li>
-      <button
-        type="button"
-        aria-pressed={active}
-        onClick={onClick}
-        className={clsx(
-          'caps group flex items-baseline gap-1.5 border-b py-1.5 whitespace-nowrap transition-colors duration-200',
-          active ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-gold hover:text-ink',
-        )}
-      >
-        {label}
-        {count !== undefined && (
-          <span className={clsx('tabular font-normal', active ? 'text-bronze' : 'text-muted')}>({count})</span>
-        )}
-      </button>
-    </li>
-  );
-}
-
-function IndexRow({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div className="flex items-baseline gap-5">
-      <span className="caps w-20 shrink-0 text-[0.625rem] text-bronze">{label}</span>
-      <ul
-        className="-mb-1 flex min-w-0 flex-1 gap-x-6 overflow-x-auto pr-8 pb-1 [scrollbar-width:none] [mask-image:linear-gradient(to_right,black_82%,transparent)] sm:[mask-image:none] sm:flex-wrap sm:overflow-visible sm:pr-0"
-        aria-label={`Filter by ${label.toLowerCase()}`}
-      >
-        {children}
-      </ul>
-    </div>
-  );
 }
 
 const toggle = (list: string[], v: string) => (list.includes(v) ? list.filter((x) => x !== v) : [...list, v]);
 
-function TagPicker({ tags, selected, onChange }: { tags: FacetCount[]; selected: string[]; onChange: (t: string[]) => void }) {
+function FilterDropdown({
+  label,
+  options,
+  selected,
+  onChange,
+  searchable,
+}: {
+  label: string;
+  options: FilterOption[];
+  selected: string[];
+  onChange: (next: string[]) => void;
+  searchable?: boolean;
+}) {
   const [query, setQuery] = useState('');
-  const shown = tags.filter((t) => t.label.toLowerCase().includes(query.toLowerCase()));
+  const shown = query ? options.filter((o) => o.label.toLowerCase().includes(query.toLowerCase())) : options;
+  const names = new Map(options.map((o) => [o.value, o.label]));
+  const first = selected[0];
+  const summary =
+    selected.length === 0 ? 'All' : selected.length === 1 && first ? (names.get(first) ?? first) : `${selected.length} selected`;
+  const active = selected.length > 0;
+
   return (
     <Popover.Root onOpenChange={(o) => !o && setQuery('')}>
       <Popover.Trigger
+        aria-label={`${label}: ${summary}`}
         className={clsx(
-          'caps flex items-center gap-1.5 border-b py-1.5 transition-colors',
-          selected.length ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-gold hover:text-ink',
+          'flex h-10 min-w-44 items-center gap-2 border bg-paper pr-2.5 pl-3 text-left transition-colors duration-200 hover:bg-gold-wash data-[state=open]:border-bronze',
+          active ? 'border-bronze' : 'border-gold',
         )}
       >
-        {selected.length ? `Tags (${selected.length} chosen)` : 'Choose tags'}
-        <ChevronDown aria-hidden className="size-3.5" strokeWidth={1.75} />
+        <span className="caps text-[0.625rem] text-bronze">{label}</span>
+        <span className={clsx('max-w-48 flex-1 truncate text-sm', active ? 'text-ink' : 'text-muted')}>{summary}</span>
+        <ChevronDown aria-hidden className="size-3.5 shrink-0 text-muted" strokeWidth={1.75} />
       </Popover.Trigger>
       <Popover.Portal>
         <Popover.Content
           align="start"
-          sideOffset={8}
+          sideOffset={6}
           className="z-40 w-72 border border-gold bg-paper shadow-[0_12px_32px_-12px_rgb(10_10_12/0.25)]"
         >
-          <label className="flex items-center gap-2 border-b border-gold/60 px-3">
-            <Search aria-hidden className="size-4 text-muted" strokeWidth={1.5} />
-            <span className="sr-only">Find a tag</span>
-            <input
-              autoFocus
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Find a tag"
-              className="h-10 w-full bg-transparent text-sm text-ink outline-none"
-            />
-          </label>
-          <ul className="max-h-72 overflow-y-auto py-1" aria-label="Tags">
-            {shown.map((t) => {
-              const on = selected.includes(t.value);
+          {searchable && (
+            <label className="flex items-center gap-2 border-b border-gold/60 px-3">
+              <Search aria-hidden className="size-4 text-muted" strokeWidth={1.5} />
+              <span className="sr-only">Find {label.toLowerCase()}</span>
+              <input
+                autoFocus
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={`Find ${label.toLowerCase()}`}
+                className="h-10 w-full bg-transparent text-sm text-ink outline-none"
+              />
+            </label>
+          )}
+          <ul className="max-h-72 overflow-y-auto py-1" aria-label={label}>
+            {shown.map((o) => {
+              const on = selected.includes(o.value);
               return (
-                <li key={t.value}>
+                <li key={o.value}>
                   <button
                     type="button"
                     aria-pressed={on}
-                    onClick={() => onChange(toggle(selected, t.value))}
+                    onClick={() => onChange(toggle(selected, o.value))}
                     className="flex w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-soft hover:bg-gold-wash focus-visible:bg-gold-wash"
                   >
                     <span
@@ -105,24 +88,40 @@ function TagPicker({ tags, selected, onChange }: { tags: FacetCount[]; selected:
                     >
                       {on && <Check aria-hidden className="size-3" strokeWidth={2.5} />}
                     </span>
-                    <span className="flex-1 truncate">{t.label}</span>
-                    <span className="tabular text-xs text-muted">{t.count}</span>
+                    <span className="flex-1 truncate">{o.label}</span>
+                    {o.count !== undefined && <span className="tabular text-xs text-muted">{o.count}</span>}
                   </button>
                 </li>
               );
             })}
-            {shown.length === 0 && <li className="px-3 py-3 text-sm text-muted">No tag matches “{query}”.</li>}
+            {shown.length === 0 && (
+              <li className="px-3 py-3 text-sm text-muted">{query ? `Nothing matches “${query}”.` : 'Nothing to choose yet.'}</li>
+            )}
           </ul>
-          {selected.length > 0 && (
+          {active && (
             <div className="border-t border-gold/60 px-3 py-2">
-              <button type="button" onClick={() => onChange([])} className="caps text-[0.625rem] text-bronze underline">
-                Clear tags
+              <button type="button" onClick={() => onChange([])} className="caps text-[0.625rem] text-bronze underline hover:text-ink">
+                Show all
               </button>
             </div>
           )}
         </Popover.Content>
       </Popover.Portal>
     </Popover.Root>
+  );
+}
+
+function Chip({ label, onRemove }: { label: string; onRemove: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onRemove}
+      className="flex items-center gap-1.5 border border-bronze/60 bg-paper px-2 py-0.5 text-xs text-ink hover:border-bronze"
+      aria-label={`Remove filter ${label}`}
+    >
+      {label}
+      <X aria-hidden className="size-3" strokeWidth={2} />
+    </button>
   );
 }
 
@@ -213,6 +212,9 @@ export function SearchField({ value, onChange }: { value: string; onChange: (q: 
   );
 }
 
+// "Not listed yet" sits in the Platform dropdown as a peer of the platforms.
+const NOT_LISTED = '__not_listed__';
+
 export function FilterRows({
   state,
   facets,
@@ -222,56 +224,59 @@ export function FilterRows({
   facets: FacetsResponse | undefined;
   update: (patch: Partial<BrowseState>) => void;
 }) {
-  const allPlatforms = state.platforms.length === 0 && !state.notListed;
-  const cities = facets?.cities ?? [];
+  const toOptions = (list: FacetCount[] | undefined): FilterOption[] =>
+    (list ?? []).map((f) => ({ value: f.value, label: f.label, count: f.count }));
+
+  const platformOptions: FilterOption[] = [
+    ...toOptions(facets?.platforms),
+    { value: NOT_LISTED, label: 'Not listed yet', count: facets?.notListed },
+  ];
+  const cityOptions = toOptions(facets?.cities);
+  const tagOptions = toOptions(facets?.tags);
+
+  const platformSelected = state.notListed ? [...state.platforms, NOT_LISTED] : state.platforms;
+  const setPlatforms = (next: string[]) =>
+    update({ platforms: next.filter((v) => v !== NOT_LISTED), notListed: next.includes(NOT_LISTED) });
+
+  const nameOf = (opts: FilterOption[], v: string) => opts.find((o) => o.value === v)?.label ?? v;
+  const chips = [
+    ...platformSelected.map((v) => ({
+      key: `p:${v}`,
+      label: nameOf(platformOptions, v),
+      remove: () => setPlatforms(platformSelected.filter((x) => x !== v)),
+    })),
+    ...state.cities.map((v) => ({
+      key: `c:${v}`,
+      label: nameOf(cityOptions, v),
+      remove: () => update({ cities: state.cities.filter((x) => x !== v) }),
+    })),
+    ...state.tags.map((v) => ({
+      key: `t:${v}`,
+      label: nameOf(tagOptions, v),
+      remove: () => update({ tags: state.tags.filter((x) => x !== v) }),
+    })),
+  ];
+
   return (
-    <div className="flex flex-col gap-2.5">
-      <IndexRow label="Platform">
-        <IndexItem label="All" count={facets?.total} active={allPlatforms} onClick={() => update({ platforms: [], notListed: false })} />
-        {(facets?.platforms ?? []).map((p) => (
-          <IndexItem
-            key={p.value}
-            label={p.label}
-            count={p.count}
-            active={state.platforms.includes(p.value)}
-            onClick={() => update({ platforms: toggle(state.platforms, p.value) })}
-          />
-        ))}
-        <IndexItem
-          label="Not listed yet"
-          count={facets?.notListed}
-          active={state.notListed}
-          onClick={() => update({ notListed: !state.notListed })}
+    <div className="flex flex-col gap-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <FilterDropdown label="Platform" options={platformOptions} selected={platformSelected} onChange={setPlatforms} />
+        <FilterDropdown
+          label="Area"
+          options={cityOptions}
+          selected={state.cities}
+          onChange={(cities) => update({ cities })}
+          searchable={cityOptions.length > 8}
         />
-      </IndexRow>
-      <IndexRow label="Area">
-        <IndexItem label="All" active={state.cities.length === 0} onClick={() => update({ cities: [] })} />
-        {cities.map((c) => (
-          <IndexItem
-            key={c.value}
-            label={c.label}
-            count={c.count}
-            active={state.cities.includes(c.value)}
-            onClick={() => update({ cities: toggle(state.cities, c.value) })}
-          />
-        ))}
-      </IndexRow>
-      <div className="flex flex-wrap items-baseline gap-x-5 gap-y-2">
-        <span className="caps w-20 shrink-0 text-[0.625rem] text-bronze">Tags</span>
-        <TagPicker tags={facets?.tags ?? []} selected={state.tags} onChange={(tags) => update({ tags })} />
-        {state.tags.map((t) => (
-          <button
-            key={t}
-            type="button"
-            onClick={() => update({ tags: state.tags.filter((x) => x !== t) })}
-            className="flex items-center gap-1.5 border border-bronze/60 bg-paper px-2 py-0.5 text-xs text-ink hover:border-bronze"
-            aria-label={`Remove tag ${t}`}
-          >
-            {t}
-            <X aria-hidden className="size-3" strokeWidth={2} />
-          </button>
-        ))}
+        <FilterDropdown label="Tags" options={tagOptions} selected={state.tags} onChange={(tags) => update({ tags })} searchable />
       </div>
+      {chips.length > 0 && (
+        <div className="flex flex-wrap items-center gap-2" aria-label="Chosen filters">
+          {chips.map((c) => (
+            <Chip key={c.key} label={c.label} onRemove={c.remove} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }

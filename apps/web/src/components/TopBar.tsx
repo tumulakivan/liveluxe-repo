@@ -16,13 +16,36 @@ export function TopBar() {
             <span className="hidden sm:inline">Live Luxe · </span>Listing Repo
           </span>
         </Link>
-        <Link
-          to={inAdmin ? '/' : '/admin'}
-          className="caps whitespace-nowrap text-muted underline decoration-transparent transition-colors hover:text-bronze hover:decoration-bronze"
-        >
-          {inAdmin ? (signedIn ? 'Browse properties' : 'Back to properties') : signedIn ? 'Dashboard' : 'Admin sign-in'}
-        </Link>
+        {/* Visitors who aren't signed in get the sign-in link in the footer instead, so it stays out of the way. */}
+        {(inAdmin || signedIn) && (
+          <Link
+            to={inAdmin ? '/' : '/admin'}
+            className="caps whitespace-nowrap text-muted underline decoration-transparent transition-colors hover:text-bronze hover:decoration-bronze"
+          >
+            {inAdmin ? (signedIn ? 'Browse properties' : 'Back to properties') : 'Dashboard'}
+          </Link>
+        )}
       </div>
     </header>
+  );
+}
+
+// A quiet footer: the admin sign-in link lives here, since most visitors never need it.
+export function Footer() {
+  const me = useMe();
+  const inAdmin = useLocation().pathname.startsWith('/admin');
+  const signedIn = !!me.data && !me.data.mustChangePassword;
+  if (inAdmin || signedIn) return null;
+  return (
+    <footer className="mt-16 border-t border-gold/60">
+      <div className="mx-auto flex max-w-[1440px] justify-end px-5 py-5 sm:px-8 lg:px-12">
+        <Link
+          to="/admin"
+          className="caps text-[0.625rem] whitespace-nowrap text-muted/80 underline decoration-transparent transition-colors hover:text-bronze hover:decoration-bronze"
+        >
+          Admin sign-in
+        </Link>
+      </div>
+    </footer>
   );
 }

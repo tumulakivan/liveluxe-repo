@@ -2,16 +2,16 @@
 name: Listing Repo
 description: Live Luxe's own portfolio index, set in the house voice of liveluxe.au.
 colors:
-  ground: "#f2eee6"
-  paper: "#f8f5ef"
-  stone: "#e8e2d6"
+  ground: "#eef0f2"
+  paper: "#f8f9fa"
+  stone: "#e1e4e8"
   ink: "#0a0a0c"
   ink-soft: "#2e2d31"
-  muted: "#5e574e"
+  muted: "#555a62"
   bronze: "#7c5e26"
   bronze-deep: "#5f4719"
-  gold: "rgb(211 172 96 / 0.9)"
-  gold-wash: "rgb(211 172 96 / 0.18)"
+  gold: "rgb(168 175 186 / 0.75)"
+  gold-wash: "rgb(140 152 168 / 0.14)"
   danger: "#8a2c1f"
 typography:
   display:
