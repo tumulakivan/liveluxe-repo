@@ -18,6 +18,7 @@ import { useProperty } from '../lib/api.ts';
 import { AdminTools } from './AdminTools.tsx';
 import { FieldEditor } from './FieldEditor.tsx';
 import { formatValue, formatWhen } from '../lib/format.ts';
+import { scrollBehavior } from '../lib/motion.ts';
 
 // The property dossier: every field, grouped by section, in one scroll with a sticky index.
 // Read-only on the main app; in the dashboard (mode "admin") the fields an admin may change get an editor.
@@ -70,7 +71,7 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       type="button"
       onClick={() => navigator.clipboard?.writeText(text).then(() => setDone(true))}
       aria-label={done ? `${label} copied` : `Copy ${label}`}
-      className="grid size-7 shrink-0 place-items-center text-muted opacity-0 transition-opacity group-hover/field:opacity-100 hover:text-bronze focus-visible:opacity-100"
+      className="grid size-7 shrink-0 place-items-center text-muted opacity-0 transition-opacity group-hover/field:opacity-100 [@media(hover:none)]:opacity-100 hover:text-bronze focus-visible:opacity-100"
     >
       {done ? <Check aria-hidden className="size-3.5 text-bronze" strokeWidth={2} /> : <Copy aria-hidden className="size-3.5" strokeWidth={1.5} />}
     </button>
@@ -239,7 +240,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
   const photoFailed = failedSrc === photo;
 
   const jump = (key: string) => {
-    scroller?.querySelector(`#sec-${key}`)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    scroller?.querySelector(`#sec-${key}`)?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   };
 
   return (

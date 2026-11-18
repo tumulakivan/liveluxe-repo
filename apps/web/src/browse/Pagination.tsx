@@ -44,7 +44,7 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={(e) => onPageSize(Number(e.target.value))}
-              className="tabular h-9 appearance-none border border-gold bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-gold-wash"
+              className="tabular h-9 appearance-none border border-edge bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-gold-wash"
             >
               {PAGE_SIZES.map((s) => (
                 <option key={s} value={s}>

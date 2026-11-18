@@ -12,6 +12,7 @@ colors:
   bronze-deep: "#5f4719"
   gold: "rgb(168 175 186 / 0.75)"
   gold-wash: "rgb(140 152 168 / 0.14)"
+  edge: "#7f8690"
   danger: "#8a2c1f"
 typography:
   display:

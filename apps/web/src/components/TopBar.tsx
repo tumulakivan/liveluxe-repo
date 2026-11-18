@@ -37,7 +37,7 @@ export function Footer() {
   const signedIn = !!me.data && !me.data.mustChangePassword;
   if (inAdmin || signedIn) return null;
   return (
-    <footer className="mt-16 border-t border-gold/60">
+    <footer className="border-t border-gold/60">
       <div className="mx-auto flex max-w-[1440px] justify-end px-5 py-5 sm:px-8 lg:px-12">
         <Link
           to="/admin"

@@ -86,7 +86,7 @@ export function FieldEditor({ propertyId, def, value, onDone }: { propertyId: nu
         rows={def.type === 'list' ? 4 : 7}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        className="w-full border border-gold bg-paper p-3 text-[0.9375rem] leading-relaxed text-ink focus:border-bronze"
+        className="w-full border border-edge bg-paper p-3 text-[0.9375rem] leading-relaxed text-ink focus:border-bronze"
       />
     ) : (
       <input
@@ -95,7 +95,7 @@ export function FieldEditor({ propertyId, def, value, onDone }: { propertyId: nu
         inputMode={def.type === 'text' ? undefined : 'decimal'}
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
-        className="h-10 w-full max-w-md border border-gold bg-paper px-3 text-[0.9375rem] text-ink focus:border-bronze"
+        className="h-10 w-full max-w-md border border-edge bg-paper px-3 text-[0.9375rem] text-ink focus:border-bronze"
       />
     );
 

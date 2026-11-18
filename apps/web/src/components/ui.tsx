@@ -9,7 +9,7 @@ const VARIANTS: Record<Variant, string> = {
   primary: 'bg-ink text-paper hover:bg-bronze-deep disabled:bg-muted',
   secondary: 'border border-gold text-ink hover:bg-gold-wash disabled:text-muted',
   quiet: 'text-bronze underline decoration-1 underline-offset-4 hover:text-ink disabled:text-muted disabled:no-underline',
-  danger: 'border border-[#8a2c1f] text-[#8a2c1f] hover:bg-[#8a2c1f] hover:text-paper disabled:opacity-60',
+  danger: 'border border-danger text-danger hover:bg-danger hover:text-paper disabled:opacity-60',
 };
 
 export const Button = forwardRef<HTMLButtonElement, ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; busy?: boolean }>(
@@ -39,7 +39,7 @@ export const TextInput = forwardRef<HTMLInputElement, InputHTMLAttributes<HTMLIn
     <input
       ref={ref}
       className={clsx(
-        'h-11 w-full border border-gold bg-paper px-3 text-[0.9375rem] text-ink transition-colors focus:border-bronze aria-invalid:border-[#8a2c1f]',
+        'h-11 w-full border border-edge bg-paper px-3 text-[0.9375rem] text-ink transition-colors focus:border-bronze aria-invalid:border-danger',
         className,
       )}
       {...rest}
@@ -60,7 +60,7 @@ export function Label({ htmlFor, children, hint }: { htmlFor: string; children: 
 export function Notice({ tone = 'error', children, className }: { tone?: 'error' | 'ok'; children: ReactNode; className?: string }) {
   if (!children) return null;
   return (
-    <p role={tone === 'error' ? 'alert' : 'status'} className={clsx('text-sm', tone === 'error' ? 'text-[#8a2c1f]' : 'text-bronze', className)}>
+    <p role={tone === 'error' ? 'alert' : 'status'} className={clsx('text-sm', tone === 'error' ? 'text-danger' : 'text-bronze', className)}>
       {children}
     </p>
   );

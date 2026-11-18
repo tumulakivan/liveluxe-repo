@@ -54,7 +54,7 @@ function Photo({ src, className }: { src: string | null; className?: string }) {
         loading="lazy"
         decoding="async"
         onError={() => setFailed(true)}
-        className="size-full object-cover transition-transform duration-700 ease-out-expo group-hover:scale-[1.035]"
+        className="size-full object-cover transition-transform duration-700 ease-out-expo motion-safe:group-hover:scale-[1.035]"
       />
     </div>
   );

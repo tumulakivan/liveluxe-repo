@@ -20,6 +20,8 @@
   --color-bronze-deep: #5f4719;
   --color-gold: rgb(168 175 186 / 0.75); /* hairlines only (cool grey) */
   --color-gold-wash: rgb(140 152 168 / 0.14);
+  --color-edge: #7f8690; /* control borders: 3.2:1 on ground, so inputs and selects read as controls */
+  --color-danger: #8a2c1f;
 
   --tracking-caps: 0.2em;
   --ease-out-expo: cubic-bezier(0.16, 1, 0.3, 1);
@@ -38,7 +40,7 @@
   }
 
   ::selection {
-    background: rgb(150 166 188 / 0.4);
+    background: color-mix(in srgb, var(--color-edge) 32%, transparent);
     color: var(--color-ink);
   }
 
@@ -100,11 +102,15 @@
   }
 }
 
+/* Reduced motion: no travel, no loops. Fades and colour changes stay, so state changes still read. */
 @media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    transition-duration: 0.01ms !important;
+  @keyframes panel-in {
+    from {
+      opacity: 0;
+    }
+  }
+
+  .shimmer {
+    animation: none;
   }
 }

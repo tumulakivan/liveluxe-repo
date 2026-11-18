@@ -2,6 +2,7 @@ import * as Tooltip from '@radix-ui/react-tooltip';
 import { useCallback, useEffect, useRef } from 'react';
 import { useFacets, useProperties } from '../lib/api.ts';
 import { useBrowseState } from '../lib/browse-state.ts';
+import { scrollBehavior } from '../lib/motion.ts';
 import { DetailPanel } from './DetailPanel.tsx';
 import { FilterRows, SearchField, SortSelect, ViewSwitch } from './FilterBar.tsx';
 import { Pagination } from './Pagination.tsx';
@@ -23,7 +24,7 @@ export function BrowsePage() {
 
   const goToPage = (page: number) => {
     update({ page });
-    resultsTop.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    resultsTop.current?.scrollIntoView({ behavior: scrollBehavior(), block: 'start' });
   };
 
   const total = list.data?.total;

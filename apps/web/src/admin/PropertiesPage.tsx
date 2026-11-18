@@ -217,7 +217,7 @@ export function PropertiesPage() {
             <select
               value={state.removed}
               onChange={(e) => set({ removed: e.target.value === 'hide' ? null : e.target.value })}
-              className="h-9 border border-gold bg-transparent px-3 text-sm text-ink hover:bg-gold-wash"
+              className="h-9 border border-edge bg-transparent px-3 text-sm text-ink hover:bg-gold-wash"
             >
               <option value="hide">In the repo</option>
               <option value="only">Removed only</option>

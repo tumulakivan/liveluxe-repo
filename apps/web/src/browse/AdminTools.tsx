@@ -153,7 +153,7 @@ export function AdminTools({ p }: { p: PropertyDetail }) {
           Manage
         </h3>
         <span className="flex items-center gap-4">
-          {p.removed && <span className="caps text-[#8a2c1f]">Removed from the repo</span>}
+          {p.removed && <span className="caps text-danger">Removed from the repo</span>}
           <Button variant={p.removed ? 'primary' : 'secondary'} busy={setRemoved.isPending} onClick={() => setRemoved.mutate(!p.removed)}>
             {p.removed ? 'Restore property' : 'Remove from repo'}
           </Button>
