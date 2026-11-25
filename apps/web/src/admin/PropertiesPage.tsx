@@ -9,15 +9,23 @@ import { Button, Notice, TextInput } from '../components/ui.tsx';
 import { DetailPanel } from '../browse/DetailPanel.tsx';
 import { SearchField } from '../browse/FilterBar.tsx';
 import { Pagination } from '../browse/Pagination.tsx';
-import { useAdminProperties, useCreateProperty, useSetRemoved } from '../lib/admin-api.ts';
+import { useAdminProperties, useCreateProperty, useRole, useSetRemoved } from '../lib/admin-api.ts';
+import { TagPicker } from '../components/TagPicker.tsx';
+import { onboardingStatus } from '../lib/onboarding.ts';
 import { PageHeading } from './AdminShell.tsx';
 
 type Removed = 'hide' | 'only' | 'all';
+type Stage = 'all' | 'live' | 'onboarding';
+
+const STAGES: { value: Stage; label: string }[] = [
+  { value: 'all', label: 'All' },
+  { value: 'live', label: 'Existing listings' },
+  { value: 'onboarding', label: 'Onboarding' },
+];
 
 const CHIPS: { key: string; label: string; api: string }[] = [
   { key: 'active', label: 'Active tag', api: 'activeOnly' },
   { key: 'notListed', label: 'Not listed anywhere', api: 'notListed' },
-  { key: 'manual', label: 'Added by hand', api: 'manualOnly' },
   { key: 'archivedOnly', label: 'Archived only', api: 'archivedOnly' },
   { key: 'archived', label: 'Include archived', api: 'includeArchived' },
 ];
@@ -25,8 +33,11 @@ const CHIPS: { key: string; label: string; api: string }[] = [
 function useAdminListState() {
   const [params, setParams] = useSearchParams();
   const removed = (['hide', 'only', 'all'] as const).find((r) => r === params.get('removed')) ?? 'hide';
+  // ?manual=1 is the old link for hand-added properties, now onboarding listings.
+  const stage = STAGES.find((s) => s.value === params.get('stage'))?.value ?? (params.get('manual') === '1' ? 'onboarding' : 'all');
   const state = {
     q: params.get('q') ?? '',
+    stage,
     removed: removed as Removed,
     flags: Object.fromEntries(CHIPS.map((c) => [c.key, params.get(c.key) === '1'])) as Record<string, boolean>,
     page: Math.max(1, Number(params.get('page')) || 1),
@@ -47,11 +58,12 @@ function useAdminListState() {
     page: String(state.page),
     pageSize: String(state.pageSize),
     removed: state.removed,
+    stage: state.stage,
     ...(state.q ? { q: state.q } : {}),
     ...Object.fromEntries(CHIPS.filter((c) => state.flags[c.key]).map((c) => [c.api, '1'])),
   }).toString();
-  const filtersActive = !!state.q || state.removed !== 'hide' || CHIPS.some((c) => state.flags[c.key]);
-  const clear = () => set({ q: null, removed: null, ...Object.fromEntries(CHIPS.map((c) => [c.key, null])) });
+  const filtersActive = !!state.q || state.removed !== 'hide' || state.stage !== 'all' || CHIPS.some((c) => state.flags[c.key]);
+  const clear = () => set({ q: null, removed: null, stage: null, manual: null, ...Object.fromEntries(CHIPS.map((c) => [c.key, null])) });
   return { state, set, qs, filtersActive, clear };
 }
 
@@ -80,7 +92,7 @@ function RemovedNotice({ removal, onDone }: { removal: Removal; onDone: (restore
   const messageId = useId();
   useEffect(() => button.current?.focus(), [removal.id]);
   return (
-    <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-gold bg-paper px-4 py-3">
+    <div role="status" className="mb-4 flex flex-wrap items-center justify-between gap-3 border-y border-hairline bg-paper px-4 py-3">
       <p id={messageId} className="text-sm text-ink">
         Removed <span className="font-medium">{removal.name}</span> from the repo. Hostaway is unchanged.
       </p>
@@ -108,7 +120,7 @@ function statusBits(p: PropertySummary): string[] {
   return [
     p.removed && 'Removed',
     p.archived && 'Archived',
-    p.hostawayId === null && 'Added by hand',
+    onboardingStatus(p),
     p.tags.some((t) => t.toLowerCase() === 'active') && 'Active tag',
   ].filter(Boolean) as string[];
 }
@@ -132,42 +144,59 @@ function OpenButton({ p, onOpen, className }: { p: PropertySummary; onOpen: (id:
 function AddProperty({ onCreated }: { onCreated: (id: number) => void }) {
   const [open, setOpen] = useState(false);
   const [name, setName] = useState('');
+  const [tags, setTags] = useState<string[]>([]);
   const create = useCreateProperty();
   const id = useId();
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    create.mutate(name, {
-      onSuccess: (p) => {
-        setName('');
-        setOpen(false);
-        onCreated(p.id);
+    create.mutate(
+      { name, tags },
+      {
+        onSuccess: (p) => {
+          setName('');
+          setTags([]);
+          setOpen(false);
+          onCreated(p.id);
+        },
       },
-    });
+    );
   };
   if (!open) {
     return (
       <Button onClick={() => setOpen(true)}>
         <Plus aria-hidden className="size-4" strokeWidth={1.75} />
-        Add property
+        Create new listing
       </Button>
     );
   }
   return (
     <form onSubmit={submit} className="flex w-full flex-col gap-2 sm:w-auto">
       <label htmlFor={id} className="caps text-bronze">
-        New property name
+        New listing name
       </label>
       <div className="flex gap-2">
-        <TextInput id={id} autoFocus value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. 1203/45 Clarendon St Southbank" className="sm:w-96" />
+        <TextInput
+          id={id}
+          autoFocus
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. [ONBOARDING] 123/45 Test Street - 2 BR with Pool and Gym"
+          className="sm:w-[28rem]"
+        />
         <Button type="submit" busy={create.isPending} disabled={name.trim().length < 2}>
-          Add
+          Create
         </Button>
-        <Button variant="secondary" onClick={() => setOpen(false)} aria-label="Cancel adding a property">
+        <Button variant="secondary" onClick={() => setOpen(false)} aria-label="Cancel creating a listing">
           <X aria-hidden className="size-4" strokeWidth={1.75} />
         </Button>
       </div>
+      <span className="caps mt-2 text-bronze">Tags</span>
+      <TagPicker value={tags} onChange={setTags} />
       <Notice>{create.error?.message}</Notice>
-      <p className="text-[0.8125rem] text-muted">You’ll fill in the rest, including a photo, in the panel that opens next.</p>
+      <p className="max-w-[60ch] text-[0.8125rem] text-muted">
+        It starts as an onboarding listing, seen only by people signed in. Fill in the details in the panel that opens next. Once an admin approves it
+        and adds its Hostaway ID, the next Sync Hostaway replaces it with the Hostaway listing.
+      </p>
     </form>
   );
 }
@@ -175,6 +204,7 @@ function AddProperty({ onCreated }: { onCreated: (id: number) => void }) {
 export function PropertiesPage() {
   const { state, set, qs, filtersActive, clear } = useAdminListState();
   const list = useAdminProperties(qs);
+  const isAdmin = useRole() === 'admin';
   const [removal, setRemoval] = useState<Removal | null>(null);
   // When the strip closes, focus moves on rather than dropping to the page: to the restored row, else to search.
   const [focusAfter, setFocusAfter] = useState<{ id: number | null } | null>(null);
@@ -197,6 +227,19 @@ export function PropertiesPage() {
 
       <div className="flex flex-col gap-5">
         <SearchField value={state.q} onChange={onSearch} />
+        <div role="group" aria-label="Which listings" className="flex w-fit border border-hairline">
+          {STAGES.map((s) => (
+            <button
+              key={s.value}
+              type="button"
+              aria-pressed={state.stage === s.value}
+              onClick={() => set({ stage: s.value === 'all' ? null : s.value, manual: null })}
+              className={clsx('caps h-9 px-4 transition-colors', state.stage === s.value ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink')}
+            >
+              {s.label}
+            </button>
+          ))}
+        </div>
         <div className="flex flex-wrap items-center gap-x-6 gap-y-3">
           {CHIPS.map((c) => (
             <button
@@ -206,7 +249,7 @@ export function PropertiesPage() {
               onClick={() => set({ [c.key]: state.flags[c.key] ? null : '1' })}
               className={clsx(
                 'caps border-b py-1.5 transition-colors',
-                state.flags[c.key] ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-gold hover:text-ink',
+                state.flags[c.key] ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-hairline hover:text-ink',
               )}
             >
               {c.label}
@@ -217,7 +260,7 @@ export function PropertiesPage() {
             <select
               value={state.removed}
               onChange={(e) => set({ removed: e.target.value === 'hide' ? null : e.target.value })}
-              className="h-9 border border-edge bg-transparent px-3 text-sm text-ink hover:bg-gold-wash"
+              className="h-9 border border-edge bg-transparent px-3 text-sm text-ink hover:bg-hover-wash"
             >
               <option value="hide">In the repo</option>
               <option value="only">Removed only</option>
@@ -239,7 +282,7 @@ export function PropertiesPage() {
         )}
 
         {list.isPending ? (
-          <div className="flex flex-col gap-px border-t border-gold" aria-busy="true">
+          <div className="flex flex-col gap-px border-t border-hairline" aria-busy="true">
             {Array.from({ length: 8 }, (_, i) => (
               <div key={i} className="shimmer h-14" />
             ))}
@@ -247,7 +290,7 @@ export function PropertiesPage() {
         ) : list.isError ? (
           <Notice>{list.error.message}</Notice>
         ) : items.length === 0 ? (
-          <div className="border-y border-gold px-1 py-14 text-center">
+          <div className="border-y border-hairline px-1 py-14 text-center">
             <h2 className="font-display text-3xl font-semibold text-ink">No properties match</h2>
             <p className="mx-auto mt-3 max-w-[48ch] text-ink-soft">
               {state.q ? `Nothing matches “${state.q}” with these filters.` : 'Nothing matches this combination of filters.'}
@@ -261,9 +304,9 @@ export function PropertiesPage() {
         ) : (
           <div className={clsx(list.isPlaceholderData && 'opacity-60')}>
             {/* Phones: stacked rows rather than a table scrolled sideways. */}
-            <ul className="border-t border-gold md:hidden">
+            <ul className="border-t border-hairline md:hidden">
               {items.map((p) => (
-                <li key={p.id} className={clsx('relative flex flex-col gap-2 border-b border-gold/45 py-4 has-[button[data-open-id]:focus-visible]:bg-paper', p.removed && 'text-muted')}>
+                <li key={p.id} className={clsx('relative flex flex-col gap-2 border-b border-hairline/45 py-4 has-[button[data-open-id]:focus-visible]:bg-paper', p.removed && 'text-muted')}>
                   <OpenButton p={p} onOpen={open} />
                   <p className="caps tabular flex flex-wrap gap-x-3 gap-y-1">
                     <span className="text-bronze">{p.hostawayId ? `Listing ${p.hostawayId}` : 'Not in Hostaway yet'}</span>
@@ -271,14 +314,14 @@ export function PropertiesPage() {
                   </p>
                   <div className="flex flex-wrap items-center justify-between gap-3">
                     <PlatformBubbles platforms={p.platforms} />
-                    <RemoveButton p={p} onRemoved={setRemoval} />
+                    {isAdmin && <RemoveButton p={p} onRemoved={setRemoval} />}
                   </div>
                   {statusBits(p).length > 0 && <span className="caps text-muted">{statusBits(p).join(' · ')}</span>}
                 </li>
               ))}
             </ul>
 
-            <div className="relative hidden overflow-x-auto border-t border-gold md:block">
+            <div className="relative hidden overflow-x-auto border-t border-hairline md:block">
               <table className="w-full min-w-[54rem] border-collapse text-left text-sm">
                 <thead>
                   <tr className="caps text-bronze">
@@ -293,7 +336,7 @@ export function PropertiesPage() {
                 </thead>
                 <tbody>
                   {items.map((p) => (
-                    <tr key={p.id} className={clsx('group relative border-t border-gold/45 hover:bg-paper has-[button[data-open-id]:focus-visible]:bg-paper', p.removed && 'text-muted')}>
+                    <tr key={p.id} className={clsx('group relative border-t border-hairline/45 hover:bg-paper has-[button[data-open-id]:focus-visible]:bg-paper', p.removed && 'text-muted')}>
                       <td className="py-3 pr-4">
                         <OpenButton p={p} onOpen={open} />
                         {p.city && <span className="mt-0.5 block text-[0.8125rem] text-muted">{p.city}</span>}
@@ -306,7 +349,7 @@ export function PropertiesPage() {
                         <span className="caps whitespace-nowrap text-muted">{statusBits(p).join(' · ') || '—'}</span>
                       </td>
                       <td className="py-3 text-right">
-                        <RemoveButton p={p} onRemoved={setRemoval} />
+                        {isAdmin && <RemoveButton p={p} onRemoved={setRemoval} />}
                       </td>
                     </tr>
                   ))}

@@ -6,6 +6,7 @@ import type { HostawayListing } from './hostaway.ts';
 export interface Lookups {
   propertyTypes: Map<number, string>;
   cancellationPolicies: Map<number, string>;
+  bedTypes: Map<number, string>;
 }
 
 type L = HostawayListing;
@@ -45,6 +46,34 @@ export function tagNames(l: L): string[] {
   return list.map((t) => t.name).filter((n): n is string => !!n);
 }
 
+/** Amenities Hostaway marks as present, in Hostaway's order (grouped by its categories). */
+export function amenities(l: L): string[] {
+  const list = Array.isArray(l.listingAmenities) ? (l.listingAmenities as { amenityName?: string; isPresent?: number }[]) : [];
+  return [...new Set(list.filter((a) => a.isPresent !== 0).map((a) => a.amenityName?.trim()).filter((n): n is string => !!n))];
+}
+
+/** One line per bedroom: "Bedroom 1: Queen Bed", "Bedroom 2: 2 × Single Bed, Sofa Bed". */
+export function bedTypes(l: L, lk: Lookups): string[] {
+  const list = Array.isArray(l.listingBedTypes) ? (l.listingBedTypes as { bedTypeId?: number; quantity?: number; bedroomNumber?: number }[]) : [];
+  const rooms = new Map<number, string[]>();
+  for (const b of list) {
+    const name = num(b.bedTypeId) !== null ? (lk.bedTypes.get(b.bedTypeId!) ?? `Bed type #${b.bedTypeId}`) : null;
+    if (!name) continue;
+    const qty = num(b.quantity) ?? 1;
+    if (qty <= 0) continue;
+    const room = num(b.bedroomNumber) ?? 0;
+    rooms.set(room, [...(rooms.get(room) ?? []), qty > 1 ? `${qty} × ${name}` : name]);
+  }
+  // Bedroom 0 (or none) is Hostaway's "not in a bedroom", e.g. a sofa bed in the living room.
+  // Bedrooms are numbered by their order: one listing numbers them 1000002 and 1000003.
+  const bedrooms = [...rooms].filter(([room]) => room > 0).sort(([a], [b]) => a - b);
+  const other = [...rooms].filter(([room]) => room <= 0).flatMap(([, beds]) => beds);
+  return [
+    ...bedrooms.map(([, beds], i) => `Bedroom ${i + 1}: ${beds.join(', ')}`),
+    ...(other.length ? [`Other areas: ${other.join(', ')}`] : []),
+  ];
+}
+
 function customField(l: L, name: string): string | null {
   const list = Array.isArray(l.customFieldValues)
     ? (l.customFieldValues as { value?: unknown; customField?: { name?: string } }[])
@@ -67,6 +96,8 @@ export function hostawayValues(l: L, lk: Lookups): Record<string, unknown> {
     bathrooms: num(l.bathroomsNumber),
     bathroomType: str(l.bathroomType)?.replace(/^./, (c) => c.toUpperCase()) ?? null,
     guestBathrooms: num(l.guestBathroomsNumber),
+    bedTypes: bedTypes(l, lk),
+    amenities: amenities(l),
 
     address: str(l.address),
     publicAddress: str(l.publicAddress),

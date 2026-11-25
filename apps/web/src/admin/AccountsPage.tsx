@@ -1,4 +1,5 @@
-import type { AdminAccount } from '@repo/shared';
+import { ROLE_LABEL, type AdminAccount, type Role } from '@repo/shared';
+import clsx from 'clsx';
 import { useEffect, useId, useRef, useState, type FormEvent } from 'react';
 import { Button, Label, Notice, TextInput } from '../components/ui.tsx';
 import { Check, Copy } from 'lucide-react';
@@ -110,7 +111,7 @@ function TokensSection() {
   const status = (t: ApiToken) => (t.revokedAt ? `Cancelled ${formatWhen(t.revokedAt)}` : t.lastUsedAt ? `Last used ${formatWhen(t.lastUsedAt)}` : 'Not used yet');
 
   return (
-    <section aria-labelledby="tokens-h" className="mt-14 border-t border-gold pt-8">
+    <section aria-labelledby="tokens-h" className="mt-14 border-t border-hairline pt-8">
       <h2 id="tokens-h" className="font-display text-[1.6rem] leading-tight font-semibold text-ink">
         Access tokens
       </h2>
@@ -120,11 +121,11 @@ function TokensSection() {
       </p>
 
       {fresh && (
-        <div role="status" className="mb-6 flex flex-col gap-3 border-y border-gold bg-paper px-4 py-4">
+        <div role="status" className="mb-6 flex flex-col gap-3 border-y border-hairline bg-paper px-4 py-4">
           <p className="text-sm text-ink">Copy this token now. It won’t be shown again.</p>
           {copied === 'failed' && <Notice>The browser wouldn’t copy it. Select the token and copy it by hand.</Notice>}
           <div className="flex flex-wrap items-center gap-3">
-            <code className="tabular min-w-0 select-all border border-gold bg-ground px-3 py-2 text-[0.8125rem] [overflow-wrap:anywhere] text-ink">{fresh}</code>
+            <code className="tabular min-w-0 select-all border border-hairline bg-ground px-3 py-2 text-[0.8125rem] [overflow-wrap:anywhere] text-ink">{fresh}</code>
             <Button
               variant="secondary"
               onClick={() => copyText(fresh).then((ok) => setCopied(ok || 'failed'))}
@@ -140,9 +141,9 @@ function TokensSection() {
       )}
 
       {list.length > 0 && (
-        <ul className="mb-8 border-t border-gold">
+        <ul className="mb-8 border-t border-hairline">
           {list.map((t) => (
-            <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-gold/45 py-3">
+            <li key={t.id} className="flex flex-wrap items-center justify-between gap-3 border-b border-hairline/45 py-3">
               <span className="min-w-0">
                 <span className={t.revokedAt ? 'block text-[0.9375rem] text-muted' : 'block text-[0.9375rem] text-ink'}>{t.name}</span>
                 <span className="flex flex-wrap gap-x-4 text-[0.8125rem] text-muted">
@@ -198,37 +199,44 @@ function TokensSection() {
 const passwordState = (a: AdminAccount) => (a.mustChangePassword ? 'Must choose a password' : 'Password set');
 const lastSignIn = (a: AdminAccount) => (a.lastSignInAt ? formatWhen(a.lastSignInAt) : 'Never');
 
+const ROLE_HELP: Record<Role, string> = {
+  contributor: 'Provides property details during onboarding. Creates and edits onboarding listings; sees everything; can’t approve.',
+  admin: 'The systems team. Everything, including approving onboarding listings, adding their Hostaway ID, syncing and accounts.',
+};
+
 export function AccountsPage() {
   const accounts = useAccounts();
   const add = useAddAccount();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [role, setRole] = useState<Role>('contributor');
   const id = useId();
   const list = accounts.data ?? [];
 
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    add.mutate({ username, password }, { onSuccess: () => (setUsername(''), setPassword('')) });
+    add.mutate({ username, password, role }, { onSuccess: () => (setUsername(''), setPassword('')) });
   };
 
   return (
     <>
       <PageHeading title="Accounts" />
       <p className="mb-8 max-w-[68ch] text-[0.9375rem] leading-relaxed text-ink-soft">
-        Admins are the only accounts. Everyone else browses without signing in. New and reset accounts start with a password you set here, and
-        must choose their own at their next sign-in.
+        Admins are the systems team; contributors provide property details during onboarding. Everyone else browses existing listings without
+        signing in. New and reset accounts start with a password you set here, and must choose their own at their next sign-in.
       </p>
       {accounts.isError && <Notice>{accounts.error.message}</Notice>}
 
       {/* Phones: stacked rows. */}
-      <ul className="border-t border-gold md:hidden">
+      <ul className="border-t border-hairline md:hidden">
         {list.map((a) => (
-          <li key={a.id} className="flex flex-col gap-1.5 border-b border-gold/45 py-4">
+          <li key={a.id} className="flex flex-col gap-1.5 border-b border-hairline/45 py-4">
             <span className="text-[0.9375rem] text-ink">
               {a.username}
               {a.isYou && <span className="caps ml-3 text-bronze">You</span>}
             </span>
             <span className="flex flex-wrap gap-x-4 text-sm text-ink-soft">
+              <span>{ROLE_LABEL[a.role]}</span>
               <span>{passwordState(a)}</span>
               <span>Last sign-in {lastSignIn(a)}</span>
             </span>
@@ -237,11 +245,12 @@ export function AccountsPage() {
         ))}
       </ul>
 
-      <div className="relative hidden overflow-x-auto border-t border-gold md:block">
+      <div className="relative hidden overflow-x-auto border-t border-hairline md:block">
         <table className="w-full min-w-[44rem] border-collapse text-left text-sm">
           <thead>
             <tr className="caps text-bronze">
               <th scope="col" className="py-3 pr-4 font-medium">Username</th>
+              <th scope="col" className="py-3 pr-4 font-medium">Role</th>
               <th scope="col" className="py-3 pr-4 font-medium">Password</th>
               <th scope="col" className="py-3 pr-4 font-medium">Last sign-in</th>
               <th scope="col" className="py-3 text-right font-medium">
@@ -251,11 +260,12 @@ export function AccountsPage() {
           </thead>
           <tbody>
             {list.map((a) => (
-              <tr key={a.id} className="border-t border-gold/45 align-top">
+              <tr key={a.id} className="border-t border-hairline/45 align-top">
                 <td className="py-3 pr-4">
                   <span className="text-[0.9375rem] text-ink">{a.username}</span>
                   {a.isYou && <span className="caps ml-3 text-bronze">You</span>}
                 </td>
+                <td className="py-3 pr-4 text-ink-soft">{ROLE_LABEL[a.role]}</td>
                 <td className="py-3 pr-4 text-ink-soft">{passwordState(a)}</td>
                 <td className="py-3 pr-4 text-ink-soft">{lastSignIn(a)}</td>
                 <td className="py-3 text-right">
@@ -267,8 +277,26 @@ export function AccountsPage() {
         </table>
       </div>
 
-      <form onSubmit={submit} className="mt-12 grid max-w-2xl gap-4 border-t border-gold pt-8 sm:grid-cols-2">
-        <h2 className="font-display text-[1.6rem] leading-tight font-semibold text-ink sm:col-span-2">Add an admin</h2>
+      <form onSubmit={submit} className="mt-12 grid max-w-2xl gap-4 border-t border-hairline pt-8 sm:grid-cols-2">
+        <h2 className="font-display text-[1.6rem] leading-tight font-semibold text-ink sm:col-span-2">Add an account</h2>
+        <fieldset className="flex flex-col gap-2 sm:col-span-2">
+          <legend className="caps mb-2 text-bronze">Role</legend>
+          <div className="flex w-fit border border-hairline">
+            {(['contributor', 'admin'] as const).map((r) => (
+              <label
+                key={r}
+                className={clsx(
+                  'caps flex h-9 cursor-pointer items-center px-4 has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-bronze',
+                  role === r ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink',
+                )}
+              >
+                <input type="radio" name={`${id}-role`} value={r} checked={role === r} onChange={() => setRole(r)} className="sr-only" />
+                {ROLE_LABEL[r]}
+              </label>
+            ))}
+          </div>
+          <p className="text-[0.8125rem] text-muted">{ROLE_HELP[role]}</p>
+        </fieldset>
         <div className="flex flex-col gap-2">
           <Label htmlFor={`${id}-u`} hint="Lowercase, e.g. systems.jordan">
             Username
@@ -284,7 +312,7 @@ export function AccountsPage() {
         <div className="flex flex-col gap-2 sm:col-span-2">
           <Notice>{add.error?.message}</Notice>
           <Button type="submit" busy={add.isPending} disabled={!username || password.length < 10} className="self-start">
-            Add admin
+            Add {ROLE_LABEL[role].toLowerCase()}
           </Button>
         </div>
       </form>

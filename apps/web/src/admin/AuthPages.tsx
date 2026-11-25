@@ -1,6 +1,14 @@
 import { useId, useState, type FormEvent, type ReactNode } from 'react';
+import { useNavigate, useSearchParams } from 'react-router';
 import { Button, Label, Notice, TextInput } from '../components/ui.tsx';
 import { useChangePassword, useSignIn, useSignOut } from '../lib/admin-api.ts';
+
+/** Where to go after signing in: the page the top bar's "Sign in" came from. Only paths on this site. */
+function useReturnTo() {
+  const [params] = useSearchParams();
+  const next = params.get('next');
+  return next && next.startsWith('/') && !next.startsWith('//') && !next.startsWith('/admin') ? next : null;
+}
 
 function AuthFrame({ title, intro, children }: { title: string; intro: string; children: ReactNode }) {
   return (
@@ -9,24 +17,27 @@ function AuthFrame({ title, intro, children }: { title: string; intro: string; c
         <h1 className="font-display text-[2.75rem] leading-none font-semibold tracking-[-0.015em] text-ink sm:text-[3.5rem]">{title}</h1>
         <p className="mt-5 max-w-[46ch] text-[0.9375rem] leading-relaxed text-ink-soft">{intro}</p>
       </div>
-      <div className="border-t border-gold pt-8">{children}</div>
+      <div className="border-t border-hairline pt-8">{children}</div>
     </main>
   );
 }
 
 export function SignInPage() {
   const signIn = useSignIn();
+  const returnTo = useReturnTo();
+  const navigate = useNavigate();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const id = useId();
   const submit = (e: FormEvent) => {
     e.preventDefault();
-    signIn.mutate({ username, password });
+    // Straight back to the page you came from, unless the account still has to choose its own password.
+    signIn.mutate({ username, password }, { onSuccess: (me) => returnTo && !me.mustChangePassword && navigate(returnTo) });
   };
   return (
     <AuthFrame
-      title="Admin sign-in"
-      intro="Admins manage properties, platforms and accounts, and run Sync Hostaway. Everyone else can browse without signing in."
+      title="Sign in"
+      intro="For the systems team and contributors: work on onboarding listings, and (admins) manage properties, platforms and accounts. Everyone else can browse without signing in."
     >
       <form onSubmit={submit} className="flex flex-col gap-5" noValidate>
         <div className="flex flex-col gap-2">
@@ -64,6 +75,8 @@ export function SignInPage() {
 export function ChangePasswordPage({ username }: { username: string }) {
   const change = useChangePassword();
   const signOut = useSignOut();
+  const returnTo = useReturnTo();
+  const navigate = useNavigate();
   const [current, setCurrent] = useState('');
   const [next, setNext] = useState('');
   const [again, setAgain] = useState('');
@@ -73,7 +86,7 @@ export function ChangePasswordPage({ username }: { username: string }) {
     e.preventDefault();
     if (next !== again) return setMismatch(true);
     setMismatch(false);
-    change.mutate({ current, next });
+    change.mutate({ current, next }, { onSuccess: () => returnTo && navigate(returnTo) });
   };
   return (
     <AuthFrame

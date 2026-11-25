@@ -112,6 +112,14 @@ const migrations: string[] = [
     revoked_at    TEXT
   );
   `,
+  // 5: onboarding. Contributor accounts, and approval plus the Hostaway ID to link for listings created
+  // here (a listing is "onboarding" while it has no hostaway_id).
+  `
+  ALTER TABLE admins ADD COLUMN role TEXT NOT NULL DEFAULT 'admin' CHECK (role IN ('admin', 'contributor'));
+  ALTER TABLE properties ADD COLUMN approved_at TEXT;
+  ALTER TABLE properties ADD COLUMN approved_by TEXT;
+  ALTER TABLE properties ADD COLUMN pending_hostaway_id INTEGER;
+  `,
 ];
 
 const current = (db.prepare('PRAGMA user_version').get() as { user_version: number }).user_version;

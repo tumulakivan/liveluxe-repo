@@ -52,6 +52,8 @@ export async function fetchListings(): Promise<HostawayListing[]> {
 
 export const fetchPropertyTypes = () => get<Named[]>('/propertyTypes');
 
+export const fetchBedTypes = () => get<Named[]>('/bedTypes');
+
 /** Cancellation policy names by id, across the account's own and each channel's list. */
 export async function fetchCancellationPolicies(): Promise<Map<number, string>> {
   const names = new Map<number, string>();

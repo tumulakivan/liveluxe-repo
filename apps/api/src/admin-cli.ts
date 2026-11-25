@@ -1,7 +1,8 @@
 // `pnpm admin <command>`: manage admin accounts from the command line.
 //
 //   pnpm admin list
-//   ADMIN_PASSWORD=... pnpm admin add <username> [username ...]
+//   ADMIN_PASSWORD=... pnpm admin add <username> [username ...]               (admins: the systems team)
+//   ADMIN_PASSWORD=... pnpm admin add --contributor <username> [username ...]  (contributors)
 //   ADMIN_PASSWORD=... pnpm admin reset <username>
 //
 // The starting password comes from ADMIN_PASSWORD so it's never written into code or config.
@@ -26,21 +27,23 @@ const [command, ...args] = process.argv.slice(2);
 switch (command) {
   case 'list': {
     const rows = db
-      .prepare('SELECT username, must_change_password, created_at, last_sign_in_at FROM admins ORDER BY username')
-      .all() as { username: string; must_change_password: number; created_at: string; last_sign_in_at: string | null }[];
-    if (rows.length === 0) console.log('No admin accounts.');
+      .prepare('SELECT username, role, must_change_password, created_at, last_sign_in_at FROM admins ORDER BY role, username')
+      .all() as { username: string; role: string; must_change_password: number; created_at: string; last_sign_in_at: string | null }[];
+    if (rows.length === 0) console.log('No accounts.');
     for (const r of rows) {
       const state = r.must_change_password ? 'must change password' : 'password set';
-      console.log(`${r.username}  (${state}; created ${r.created_at}; last sign-in ${r.last_sign_in_at ?? 'never'})`);
+      console.log(`${r.username}  [${r.role}]  (${state}; created ${r.created_at}; last sign-in ${r.last_sign_in_at ?? 'never'})`);
     }
     break;
   }
   case 'add': {
-    if (args.length === 0) throw new Error('Name at least one username.');
+    const role = args.includes('--contributor') ? 'contributor' : 'admin';
+    const names = args.filter((a) => a !== '--contributor');
+    if (names.length === 0) throw new Error('Name at least one username.');
     const password = startingPassword();
-    const insert = db.prepare('INSERT INTO admins (username, password_hash, must_change_password) VALUES (?, ?, 1)');
+    const insert = db.prepare('INSERT INTO admins (username, password_hash, must_change_password, role) VALUES (?, ?, 1, ?)');
     const exists = db.prepare('SELECT 1 FROM admins WHERE username = ?');
-    for (const raw of args) {
+    for (const raw of names) {
       const username = raw.trim().toLowerCase();
       if (!USERNAME.test(username)) {
         console.error(`Skipped "${raw}": use 3–64 lowercase letters, digits, dots, hyphens or underscores.`);
@@ -50,8 +53,8 @@ switch (command) {
         console.log(`Skipped ${username}: already exists.`);
         continue;
       }
-      insert.run(username, await hashPassword(password));
-      console.log(`Added ${username} (must change password at first sign-in).`);
+      insert.run(username, await hashPassword(password), role);
+      console.log(`Added ${username} as ${role === 'admin' ? 'an admin' : 'a contributor'} (must change password at first sign-in).`);
     }
     break;
   }
@@ -72,5 +75,5 @@ switch (command) {
     break;
   }
   default:
-    console.log('Usage: pnpm admin list | add <username...> | reset <username> | token [name]  (ADMIN_PASSWORD sets the starting password)');
+    console.log('Usage: pnpm admin list | add [--contributor] <username...> | reset <username> | token [name]  (ADMIN_PASSWORD sets the starting password)');
 }

@@ -1,7 +1,34 @@
 import * as Tooltip from '@radix-ui/react-tooltip';
 import { useCallback, useEffect, useRef } from 'react';
+import clsx from 'clsx';
+import { useMe } from '../lib/admin-api.ts';
 import { useFacets, useProperties } from '../lib/api.ts';
-import { useBrowseState } from '../lib/browse-state.ts';
+import { useBrowseState, type Stage } from '../lib/browse-state.ts';
+
+const STAGE_OPTIONS: { value: Stage; label: string }[] = [
+  { value: 'live', label: 'Existing' },
+  { value: 'onboarding', label: 'Onboarding' },
+  { value: 'all', label: 'Both' },
+];
+
+/** Signed-in people only: switch between existing listings and onboarding listings. */
+function StageSwitch({ stage, onChange }: { stage: Stage; onChange: (s: Stage) => void }) {
+  return (
+    <div role="group" aria-label="Which listings" className="flex border border-hairline">
+      {STAGE_OPTIONS.map((s) => (
+        <button
+          key={s.value}
+          type="button"
+          aria-pressed={stage === s.value}
+          onClick={() => onChange(s.value)}
+          className={clsx('caps h-9 px-3 text-[0.625rem] transition-colors', stage === s.value ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink')}
+        >
+          {s.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 import { scrollBehavior } from '../lib/motion.ts';
 import { DetailPanel } from './DetailPanel.tsx';
 import { FilterRows, SearchField, SortSelect, ViewSwitch } from './FilterBar.tsx';
@@ -9,7 +36,11 @@ import { Pagination } from './Pagination.tsx';
 import { CardView, ListView, LoadingView, TileView } from './Views.tsx';
 
 export function BrowsePage() {
-  const { state, update, filtersActive, clearFilters } = useBrowseState();
+  const { state: urlState, update, filtersActive, clearFilters } = useBrowseState();
+  const me = useMe();
+  const signedIn = !!me.data && !me.data.mustChangePassword;
+  // Signed out, a shared ?stage=onboarding link falls back to existing listings (the server does the same).
+  const state = signedIn ? urlState : { ...urlState, stage: 'live' as const };
   const list = useProperties(state);
   const facets = useFacets(state);
   const resultsTop = useRef<HTMLDivElement>(null);
@@ -29,6 +60,7 @@ export function BrowsePage() {
 
   const total = list.data?.total;
   const archivedNote = state.includeArchived ? ' including archived' : '';
+  const stageNote = state.stage === 'onboarding' ? ' onboarding' : state.stage === 'all' ? ' existing and onboarding' : '';
 
   return (
     <Tooltip.Provider delayDuration={250}>
@@ -38,13 +70,13 @@ export function BrowsePage() {
             <h1 className="font-display flex items-baseline gap-4 text-[2.75rem] leading-none font-semibold tracking-[-0.015em] text-ink sm:text-[3.5rem]">
               Properties
               <span className="caps tabular text-[0.6875rem] font-medium tracking-[0.2em] text-bronze" aria-live="polite">
-                {total === undefined ? '' : `${total} shown${archivedNote}`}
+                {total === undefined ? '' : `${total}${stageNote} shown${archivedNote}`}
               </span>
             </h1>
             <SearchField value={state.q} onChange={onSearch} />
           </div>
 
-          <div className="border-y border-gold py-5">
+          <div className="border-y border-hairline py-5">
             <FilterRows state={state} facets={facets.data} facetsFailed={facets.isError} update={update} />
           </div>
 
@@ -55,6 +87,7 @@ export function BrowsePage() {
               </button>
             )}
             <div className="ml-auto flex flex-wrap items-center gap-x-5 gap-y-3">
+              {signedIn && <StageSwitch stage={state.stage} onChange={(stage) => update({ stage })} />}
               <label className="flex cursor-pointer items-center gap-2 text-sm text-ink-soft">
                 <input
                   type="checkbox"
@@ -73,7 +106,7 @@ export function BrowsePage() {
             {list.isPending ? (
               <LoadingView view={state.view} />
             ) : list.isError ? (
-              <div role="alert" className="border border-gold bg-paper px-6 py-10">
+              <div role="alert" className="border border-hairline bg-paper px-6 py-10">
                 <h2 className="font-display text-2xl font-semibold text-ink">Properties couldn't be loaded</h2>
                 <p className="mt-2 text-sm text-muted">{list.error.message}</p>
                 <button type="button" onClick={() => list.refetch()} className="caps mt-5 bg-ink px-4 py-2.5 text-paper hover:bg-bronze-deep">
@@ -81,7 +114,7 @@ export function BrowsePage() {
                 </button>
               </div>
             ) : list.data.items.length === 0 ? (
-              <div className="border-y border-gold px-1 py-16 text-center">
+              <div className="border-y border-hairline px-1 py-16 text-center">
                 <h2 className="font-display text-3xl font-semibold text-ink">No properties match</h2>
                 <p className="mx-auto mt-3 max-w-[48ch] text-ink-soft">
                   {state.q ? `Nothing matches “${state.q}” with these filters.` : 'Nothing matches this combination of filters.'}
@@ -94,7 +127,7 @@ export function BrowsePage() {
                     </button>
                   )}
                   {!state.includeArchived && (
-                    <button type="button" onClick={() => update({ includeArchived: true })} className="caps border border-gold px-4 py-2.5 text-ink hover:bg-gold-wash">
+                    <button type="button" onClick={() => update({ includeArchived: true })} className="caps border border-hairline px-4 py-2.5 text-ink hover:bg-hover-wash">
                       Include archived
                     </button>
                   )}

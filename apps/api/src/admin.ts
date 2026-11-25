@@ -4,11 +4,14 @@ import { unlink, writeFile } from 'node:fs/promises';
 import { basename, resolve } from 'node:path';
 import {
   FIELD_BY_KEY,
+  FIELDS,
   fieldValueSchemas,
+  formatValue,
   listQuerySchema,
   PDF_MAX_COLUMNS,
   reportQuerySchema,
   usernameSchema,
+  type Role,
   type AdminAccount,
   type AdminPlatform,
   type OverviewResponse,
@@ -17,21 +20,48 @@ import {
 } from '@repo/shared';
 import { Hono } from 'hono';
 import { z } from 'zod';
-import { changePassword, currentAdmin, MIN_PASSWORD, requireAdmin, type AdminEnv } from './auth.ts';
+import { adminOnly, changePassword, currentAdmin, MIN_PASSWORD, requireSignedIn, type AdminEnv } from './auth.ts';
 import { config } from './config.ts';
 import { db, transaction } from './db.ts';
 import { hashPassword } from './passwords.ts';
-import { createToken, DASHBOARD_FIELDS, listTokens, revokeToken } from './fill.ts';
+import { createToken, listTokens, revokeToken } from './fill.ts';
 import { toPdf } from './pdf.ts';
 import { buildReport, toCsv } from './reports.ts';
 import { facets, getProperty, hasActiveTag, initialsFor, listProperties, loadSummaries } from './properties.ts';
 import { syncHostaway } from './sync.ts';
 
+// The dashboard API. Everyone signed in (admins and contributors) can read every property and
+// create and edit onboarding listings. Everything else is the systems team's (admins): approving,
+// linking to Hostaway, removing, syncing, reports, platforms, accounts and tokens.
 export const admin = new Hono<AdminEnv>();
-admin.use('*', requireAdmin);
+admin.use('*', requireSignedIn);
+
+/** Routes any signed-in person may use. Everything not listed here is admin-only. */
+const OPEN_TO_CONTRIBUTORS: [method: string, pattern: RegExp][] = [
+  ['GET', /^\/properties(\/\d+)?$/],
+  ['GET', /^\/facets$/],
+  ['GET', /^\/platforms$/],
+  ['POST', /^\/properties$/],
+  ['PATCH', /^\/properties\/\d+\/fields$/],
+  ['POST', /^\/properties\/\d+\/photo$/],
+  ['PUT', /^\/properties\/\d+\/platforms\/[\w-]+$/],
+];
+
+admin.use('*', async (c, next) => {
+  const path = c.req.path.replace(/^\/api\/admin/, '');
+  if (OPEN_TO_CONTRIBUTORS.some(([m, re]) => m === c.req.method && re.test(path))) return next();
+  return adminOnly(c, next);
+});
 
 const now = () => new Date().toISOString();
 const bad = (message: string) => ({ error: message });
+
+/** Contributors may change onboarding listings only; admins anything. Returns an error message, or null. */
+function cannotWrite(role: Role, id: number): string | null {
+  if (role === 'admin') return null;
+  const row = db.prepare('SELECT hostaway_id FROM properties WHERE id = ?').get(id) as { hostaway_id: number | null };
+  return row.hostaway_id === null ? null : 'Contributors can change onboarding listings only. This one is already in Hostaway.';
+}
 
 // ---------------------------------------------------------------- overview and sync
 
@@ -60,6 +90,7 @@ admin.get('/overview', (c) => {
     notListed: kept.filter((p) => !p.archived && p.platforms.length === 0).length,
     archived: kept.filter((p) => p.archived).length,
     addedByHand: kept.filter((p) => p.hostawayId === null).length,
+    awaitingApproval: kept.filter((p) => p.onboarding && !p.onboarding.approvedAt).length,
     removed: all.length - kept.length,
     lastSync: lastSyncRun(),
     syncing,
@@ -143,13 +174,17 @@ admin.patch('/properties/:id/fields', async (c) => {
   if (id === null) return c.json(bad('Property not found'), 404);
   const parsed = fieldPatch.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json(bad('Send the changed values as { values: { field: value } }.'), 400);
+  const refused = cannotWrite(c.get('admin').role, id);
+  if (refused) return c.json(bad(refused), 403);
 
   const { hostaway_id } = db.prepare('SELECT hostaway_id FROM properties WHERE id = ?').get(id) as { hostaway_id: number | null };
+  const synced = db.prepare("SELECT 1 FROM field_values WHERE property_id = ? AND field_key = ? AND source = 'sync' AND value IS NOT NULL");
   const clean: [string, string | null][] = [];
   for (const [key, raw] of Object.entries(parsed.data.values)) {
     const def = FIELD_BY_KEY.get(key);
     if (!def) return c.json(bad(`Unknown field “${key}”.`), 400);
-    if (def.source === 'hostaway' && hostaway_id !== null) {
+    // Imported properties: Hostaway's values are read-only, except a fillable field Hostaway has nothing for.
+    if (def.source === 'hostaway' && hostaway_id !== null && !(def.fillable && !synced.get(id, key))) {
       return c.json(bad(`${def.label} comes from Hostaway. Change it there, then run Sync Hostaway.`), 403);
     }
     const value = fieldValueSchemas[def.type].safeParse(raw);
@@ -186,23 +221,79 @@ admin.post('/properties/:id/restore', (c) => {
   return c.json(getProperty(id, { includeRemoved: true }));
 });
 
-const newProperty = z.object({ name: z.string().trim().min(2, 'Give the property a name.').max(300) });
+const newProperty = z.object({
+  name: z.string().trim().min(2, 'Give the property a name.').max(300),
+  /** Tags such as "Property Management" or "Rental Arbitrage". */
+  tags: z.array(z.string().trim().min(1).max(200)).max(50).default([]),
+});
 
+/** Create new listing: an onboarding listing (no Hostaway ID), with its name and tags. */
 admin.post('/properties', async (c) => {
   const parsed = newProperty.safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json(bad(parsed.error.issues[0]?.message ?? 'Give the property a name.'), 400);
   const { username } = c.get('admin');
+  const tags = [...new Set(parsed.data.tags)];
   const id = transaction(() => {
     const at = now();
     const { id } = db
       .prepare('INSERT INTO properties (name, search_text, created_by, created_at, updated_at) VALUES (?, ?, ?, ?, ?) RETURNING id')
       .get(parsed.data.name, parsed.data.name.toLowerCase(), username, at, at) as { id: number };
-    db.prepare(
-      "INSERT INTO field_values (property_id, field_key, value, source, updated_at, updated_by) VALUES (?, 'internalName', ?, 'admin', ?, ?)",
-    ).run(id, JSON.stringify(parsed.data.name), at, username);
+    const put = db.prepare('INSERT INTO field_values (property_id, field_key, value, source, updated_at, updated_by) VALUES (?, ?, ?, ?, ?, ?)');
+    put.run(id, 'internalName', JSON.stringify(parsed.data.name), 'admin', at, username);
+    if (tags.length) put.run(id, 'tags', JSON.stringify(tags), 'admin', at, username);
+    refreshSummary(id);
     return id;
   });
   return c.json(getProperty(id), 201);
+});
+
+// ---------------------------------------------------------------- onboarding: approve, then link to Hostaway
+
+function onboardingRow(raw: string) {
+  const id = propertyId(raw);
+  if (id === null) return null;
+  const row = db.prepare('SELECT id, hostaway_id, approved_at, pending_hostaway_id FROM properties WHERE id = ?').get(id) as {
+    id: number;
+    hostaway_id: number | null;
+    approved_at: string | null;
+    pending_hostaway_id: number | null;
+  };
+  return row;
+}
+
+const approveBody = z.object({
+  hostawayId: z.number({ message: 'Enter the Hostaway listing ID, digits only.' }).int().positive().max(2_147_483_647),
+});
+
+/**
+ * Approve, in one step with the Hostaway listing ID it became (or will become). The next Sync Hostaway
+ * that finds that listing replaces this onboarding listing with it. Approving again changes the ID.
+ */
+admin.post('/properties/:id/approve', async (c) => {
+  const row = onboardingRow(c.req.param('id'));
+  if (!row) return c.json(bad('Property not found'), 404);
+  if (row.hostaway_id !== null) return c.json(bad('This listing is already in Hostaway.'), 400);
+  const parsed = approveBody.safeParse(await c.req.json().catch(() => null));
+  if (!parsed.success) return c.json(bad(parsed.error.issues[0]?.message ?? 'Enter the Hostaway listing ID to approve.'), 400);
+  const { hostawayId } = parsed.data;
+  const other = db.prepare('SELECT name FROM properties WHERE pending_hostaway_id = ? AND id != ? AND hidden = 0').get(hostawayId, row.id) as
+    | { name: string }
+    | undefined;
+  if (other) return c.json(bad(`Hostaway listing ${hostawayId} is already given to “${other.name}”.`), 409);
+  db.prepare(
+    `UPDATE properties SET pending_hostaway_id = ?, approved_at = COALESCE(approved_at, ?), approved_by = COALESCE(approved_by, ?),
+       updated_at = ? WHERE id = ?`,
+  ).run(hostawayId, now(), c.get('admin').username, now(), row.id);
+  return c.json(getProperty(row.id, { includeRemoved: true }));
+});
+
+/** Back to awaiting approval, clearing the Hostaway ID with it. */
+admin.post('/properties/:id/unapprove', (c) => {
+  const row = onboardingRow(c.req.param('id'));
+  if (!row) return c.json(bad('Property not found'), 404);
+  if (row.hostaway_id !== null) return c.json(bad('This listing is already in Hostaway.'), 400);
+  db.prepare('UPDATE properties SET approved_at = NULL, approved_by = NULL, pending_hostaway_id = NULL, updated_at = ? WHERE id = ?').run(now(), row.id);
+  return c.json(getProperty(row.id, { includeRemoved: true }));
 });
 
 // ---------------------------------------------------------------- access tokens and missing fields
@@ -222,19 +313,22 @@ admin.post('/tokens/:id/revoke', (c) => {
 });
 
 /**
- * How complete the dashboard-only fields are. A field counts only for properties it applies to:
+ * How complete the fields the app shows are. A field counts only for properties it applies to:
  * a platform field only where the property is listed on that platform. Archived and removed are left out.
  */
 admin.get('/missing', (c) => {
   const props = loadSummaries().filter((p) => !p.removed && !p.archived);
-  const keys = DASHBOARD_FIELDS.map((f) => f.key);
+  const keys = FIELDS.map((f) => f.key);
   const filled = new Set(
     (db
-      .prepare(`SELECT property_id, field_key FROM field_values WHERE value IS NOT NULL AND field_key IN (${keys.map(() => '?').join(',')})`)
-      .all(...keys) as { property_id: number; field_key: string }[]).map((r) => `${r.property_id}:${r.field_key}`),
+      .prepare(`SELECT property_id, field_key, value FROM field_values WHERE value IS NOT NULL AND field_key IN (${keys.map(() => '?').join(',')})`)
+      .all(...keys) as { property_id: number; field_key: string; value: string }[])
+      // "[]" (no amenities, no bed types) is empty too.
+      .filter((r) => formatValue(FIELD_BY_KEY.get(r.field_key)!, JSON.parse(r.value)) !== null)
+      .map((r) => `${r.property_id}:${r.field_key}`),
   );
   const perProperty = new Map<number, number>();
-  const fields = DASHBOARD_FIELDS.map((f) => {
+  const fields = FIELDS.map((f) => {
     const applicable = props.filter((p) => !f.platform || p.platforms.some((b) => b.key === f.platform));
     const missing = applicable.filter((p) => !filled.has(`${p.id}:${f.key}`));
     for (const p of missing) perProperty.set(p.id, (perProperty.get(p.id) ?? 0) + 1);
@@ -306,6 +400,7 @@ admin.post('/properties/:id/photo', async (c) => {
     photo_source: string;
   };
   if (prop.hostaway_id !== null) return c.json(bad('Photos of Hostaway listings come from Hostaway.'), 403);
+  // (Onboarding listings only, so contributors may upload too.)
 
   const form = await c.req.parseBody().catch(() => null);
   const file = form?.photo;
@@ -411,6 +506,8 @@ admin.put('/properties/:id/platforms/:key', async (c) => {
     | { id: number; kind: string; name: string }
     | undefined;
   if (!platform) return c.json(bad('Platform not found'), 404);
+  const refused = cannotWrite(c.get('admin').role, id);
+  if (refused) return c.json(bad(refused), 403);
   const { hostaway_id } = db.prepare('SELECT hostaway_id FROM properties WHERE id = ?').get(id) as { hostaway_id: number | null };
   if (platform.kind === 'hostaway' && hostaway_id !== null) {
     return c.json(bad(`${platform.name} status comes from Hostaway. Change it there, then run Sync Hostaway.`), 403);
@@ -428,15 +525,17 @@ admin.put('/properties/:id/platforms/:key', async (c) => {
 // ---------------------------------------------------------------- admin accounts
 
 function accounts(selfId: number): AdminAccount[] {
-  return (db.prepare('SELECT id, username, must_change_password, created_at, last_sign_in_at FROM admins ORDER BY username').all() as {
+  return (db.prepare("SELECT id, username, role, must_change_password, created_at, last_sign_in_at FROM admins ORDER BY role = 'contributor', username").all() as {
     id: number;
     username: string;
+    role: Role;
     must_change_password: number;
     created_at: string;
     last_sign_in_at: string | null;
   }[]).map((r) => ({
     id: r.id,
     username: r.username,
+    role: r.role,
     mustChangePassword: r.must_change_password === 1,
     createdAt: r.created_at,
     lastSignInAt: r.last_sign_in_at,
@@ -449,14 +548,17 @@ const startingPassword = z.string().min(MIN_PASSWORD, `Use at least ${MIN_PASSWO
 admin.get('/accounts', (c) => c.json(accounts(c.get('admin').id)));
 
 admin.post('/accounts', async (c) => {
-  const parsed = z.object({ username: usernameSchema, password: startingPassword }).safeParse(await c.req.json().catch(() => null));
+  const parsed = z
+    .object({ username: usernameSchema, password: startingPassword, role: z.enum(['admin', 'contributor']).default('contributor') })
+    .safeParse(await c.req.json().catch(() => null));
   if (!parsed.success) return c.json(bad(parsed.error.issues[0]?.message ?? 'Invalid account.'), 400);
   if (db.prepare('SELECT 1 FROM admins WHERE username = ?').get(parsed.data.username)) {
     return c.json(bad(`${parsed.data.username} already exists.`), 409);
   }
-  db.prepare('INSERT INTO admins (username, password_hash, must_change_password) VALUES (?, ?, 1)').run(
+  db.prepare('INSERT INTO admins (username, password_hash, must_change_password, role) VALUES (?, ?, 1, ?)').run(
     parsed.data.username,
     await hashPassword(parsed.data.password),
+    parsed.data.role,
   );
   return c.json(accounts(c.get('admin').id), 201);
 });
@@ -474,8 +576,9 @@ admin.post('/accounts/:id/reset', async (c) => {
 admin.delete('/accounts/:id', (c) => {
   const id = Number(c.req.param('id'));
   if (id === c.get('admin').id) return c.json(bad('You can’t remove your own account.'), 400);
-  const { n } = db.prepare('SELECT COUNT(*) AS n FROM admins').get() as { n: number };
-  if (n <= 1) return c.json(bad('The last admin can’t be removed.'), 400);
+  const target = db.prepare('SELECT role FROM admins WHERE id = ?').get(id) as { role: Role } | undefined;
+  const { n } = db.prepare("SELECT COUNT(*) AS n FROM admins WHERE role = 'admin'").get() as { n: number };
+  if (target?.role === 'admin' && n <= 1) return c.json(bad('The last admin can’t be removed.'), 400);
   const result = db.prepare('DELETE FROM admins WHERE id = ?').run(id);
   if (!result.changes) return c.json(bad('Account not found'), 404);
   return c.json(accounts(c.get('admin').id));
@@ -491,5 +594,5 @@ passwordRoute.post('/', async (c) => {
   if (!parsed.success) return c.json(bad('Fill in both passwords.'), 400);
   const problem = await changePassword(me, parsed.data.current, parsed.data.next);
   if (problem) return c.json(bad(problem), 400);
-  return c.json({ username: me.username, mustChangePassword: false });
+  return c.json({ username: me.username, mustChangePassword: false, role: me.role });
 });

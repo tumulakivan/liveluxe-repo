@@ -7,9 +7,13 @@ import { useSearchParams } from 'react-router';
 
 export type ViewMode = 'card' | 'tile' | 'list';
 export type SortMode = 'name' | 'recent';
+/** Existing listings, onboarding listings, or both. Only offered to people signed in; the server enforces it. */
+export type Stage = 'live' | 'onboarding' | 'all';
+const STAGES: Stage[] = ['live', 'onboarding', 'all'];
 
 export interface BrowseState {
   q: string;
+  stage: Stage;
   platforms: string[];
   notListed: boolean;
   cities: string[];
@@ -46,6 +50,7 @@ export function useBrowseState() {
     const open = Number(params.get('p'));
     return {
       q: params.get('q') ?? '',
+      stage: STAGES.find((s) => s === params.get('stage')) ?? 'live',
       platforms: list(params.get('platforms')),
       notListed: params.get('notListed') === '1',
       cities: list(params.get('areas')),
@@ -66,9 +71,10 @@ export function useBrowseState() {
         (prev) => {
           const next = new URLSearchParams(prev);
           const set = (key: string, value: string | null) => (value ? next.set(key, value) : next.delete(key));
-          const resets = ['q', 'platforms', 'notListed', 'cities', 'tags', 'includeArchived', 'sort', 'pageSize'];
+          const resets = ['q', 'stage', 'platforms', 'notListed', 'cities', 'tags', 'includeArchived', 'sort', 'pageSize'];
           if (Object.keys(patch).some((k) => resets.includes(k)) && patch.page === undefined) next.delete('page');
           if ('q' in patch) set('q', patch.q || null);
+          if ('stage' in patch) set('stage', patch.stage === 'live' ? null : patch.stage!);
           if ('platforms' in patch) set('platforms', patch.platforms!.join(',') || null);
           if ('notListed' in patch) set('notListed', patch.notListed ? '1' : null);
           if ('cities' in patch) set('areas', patch.cities!.join(',') || null);

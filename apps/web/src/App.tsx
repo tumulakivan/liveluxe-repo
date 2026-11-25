@@ -1,7 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { Route, Routes } from 'react-router';
 import { BrowsePage } from './browse/BrowsePage.tsx';
-import { Footer, TopBar } from './components/TopBar.tsx';
+import { TopBar } from './components/TopBar.tsx';
 
 // The dashboard loads only when someone opens /admin, so browsing staff don't download it.
 const AdminRoot = lazy(() => import('./admin/AdminRoot.tsx').then((m) => ({ default: m.AdminRoot })));
@@ -21,7 +21,7 @@ export function App() {
       >
         Skip to properties
       </a>
-      {/* Full-height column so the footer sits at the bottom even on short pages. */}
+      {/* Full-height column, so short pages still fill the window. */}
       <div className="flex min-h-dvh flex-col">
         <TopBar />
         <div className="flex-1">
@@ -38,7 +38,6 @@ export function App() {
             <Route path="*" element={<BrowsePage />} />
           </Routes>
         </div>
-        <Footer />
       </div>
     </>
   );

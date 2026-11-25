@@ -29,6 +29,9 @@ interface Row {
   synced_at: string | null;
   photo_source: 'hostaway' | 'upload';
   created_by: string | null;
+  approved_at: string | null;
+  approved_by: string | null;
+  pending_hostaway_id: number | null;
 }
 
 interface PlatformRow {
@@ -110,6 +113,10 @@ export function loadSummaries(): (PropertySummary & {
     platforms: listed.get(r.id) ?? [],
     archived: r.archived === 1,
     removed: r.hidden === 1,
+    onboarding:
+      r.hostaway_id === null
+        ? { createdBy: r.created_by, approvedAt: r.approved_at, approvedBy: r.approved_by, pendingHostawayId: r.pending_hostaway_id }
+        : null,
     searchText: r.search_text,
     updatedAt: r.updated_at,
     syncedAt: r.synced_at,
@@ -124,6 +131,10 @@ export const hasActiveTag = (p: Pick<Summary, 'tags'>) => p.tags.some((t) => t.t
 
 const removedFilter = (p: Summary, mode: ListQuery['removed']) =>
   mode === 'all' ? true : mode === 'only' ? p.removed : !p.removed;
+
+/** Existing listings are in Hostaway; onboarding listings were created here and aren't yet. */
+export const stageFilter = (p: Pick<Summary, 'hostawayId'>, stage: ListQuery['stage']) =>
+  stage === 'all' ? true : stage === 'onboarding' ? p.hostawayId === null : p.hostawayId !== null;
 
 export const collator = new Intl.Collator('en-AU', { numeric: true, sensitivity: 'base' });
 /** Sort on the name without owner-group prefixes like "[BLUEMO] ". */
@@ -140,6 +151,7 @@ export function matchesSearch(p: Summary, q: string | undefined) {
 export function applyFilter(all: Summary[], q: ListQuery): Summary[] {
   return all
     .filter((p) => removedFilter(p, q.removed))
+    .filter((p) => stageFilter(p, q.stage))
     .filter((p) => (q.archivedOnly ? p.archived : q.includeArchived || q.removed === 'only' || !p.archived))
     .filter((p) => !q.manualOnly || p.hostawayId === null)
     .filter((p) => !q.activeOnly || hasActiveTag(p))
@@ -180,9 +192,10 @@ const count = (values: Iterable<string>, label: (v: string) => string = (v) => v
 };
 
 /** Counts for the filter row, over properties matching the search and archive toggle. */
-export function facets(q: Pick<ListQuery, 'q' | 'includeArchived' | 'removed'>): FacetsResponse {
+export function facets(q: Pick<ListQuery, 'q' | 'includeArchived' | 'removed' | 'stage'>): FacetsResponse {
   const base = loadSummaries()
     .filter((p) => removedFilter(p, q.removed))
+    .filter((p) => stageFilter(p, q.stage))
     .filter((p) => q.includeArchived || q.removed === 'only' || !p.archived)
     .filter((p) => matchesSearch(p, q.q));
   const platformNames = new Map(activePlatforms().map((p) => [p.key, p.name]));

@@ -21,8 +21,18 @@ export function AdminRoot() {
   }
   if (!me.data) return <SignInPage />;
   if (me.data.mustChangePassword) return <ChangePasswordPage username={me.data.username} />;
+  // Contributors work on properties only (onboarding listings); the rest is the systems team's.
+  if (me.data.role === 'contributor') {
+    return (
+      <AdminShell username={me.data.username} role="contributor">
+        <Routes>
+          <Route path="*" element={<PropertiesPage />} />
+        </Routes>
+      </AdminShell>
+    );
+  }
   return (
-    <AdminShell username={me.data.username}>
+    <AdminShell username={me.data.username} role="admin">
       <Routes>
         <Route index element={<OverviewPage />} />
         <Route path="properties" element={<PropertiesPage />} />

@@ -2,8 +2,11 @@
 
 Live Luxe AU's internal property reference: every property and its details, built from Hostaway, with an admin dashboard and CSV/PDF reports.
 
-- **Main app (`/`)**: staff browse properties (Card, Tile, List), search and filter, and open a property's full details. No sign-in.
-- **Dashboard (`/admin`)**: admins only. Overview and Sync Hostaway, properties (edit, add by hand, remove/restore), reports, missing fields, platforms, accounts and access tokens.
+- **Main app (`/`)**: staff browse existing properties (Card, Tile, List), search and filter, and open a property's full details. No sign-in.
+- **Dashboard (`/admin`)**: two account types.
+  - **Admins** (the systems team): overview and Sync Hostaway, properties (edit, remove/restore), approving onboarding listings and adding their Hostaway ID, reports, missing fields, platforms, accounts and access tokens.
+  - **Contributors**: see every property, and create and edit onboarding listings.
+- **Onboarding listings**: created with "Create new listing", seen only by people signed in. An admin approves one, then adds its Hostaway ID once it's listed there; the next Sync Hostaway replaces it with the Hostaway listing, keeping typed values where Hostaway has none.
 
 Product and design context: [`PRODUCT.md`](PRODUCT.md), [`DESIGN.md`](DESIGN.md).
 
@@ -25,7 +28,8 @@ pnpm dev                    # web on http://localhost:5190, API on :4200
 Admins:
 
 ```sh
-ADMIN_PASSWORD='<starting password>' pnpm admin add <username> [username ...]
+ADMIN_PASSWORD='<starting password>' pnpm admin add <username> [username ...]                # systems team
+ADMIN_PASSWORD='<starting password>' pnpm admin add --contributor <username> [username ...]  # onboarding contributors
 pnpm admin list
 ADMIN_PASSWORD='<starting password>' pnpm admin reset <username>
 pnpm admin token "<name>"   # access token for the Claude fill (shown once)

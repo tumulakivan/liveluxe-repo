@@ -1,13 +1,13 @@
 import clsx from 'clsx';
 
-export function Tags({ tags, max, className }: { tags: string[]; max?: number; className?: string }) {
+export function Tags({ tags, max, className, label = 'Tags' }: { tags: string[]; max?: number; className?: string; label?: string }) {
   if (tags.length === 0) return null;
   const shown = max ? tags.slice(0, max) : tags;
   const rest = tags.length - shown.length;
   return (
-    <ul className={clsx('flex flex-wrap gap-1.5', className)} aria-label="Tags">
+    <ul className={clsx('flex flex-wrap gap-1.5', className)} aria-label={label}>
       {shown.map((t) => (
-        <li key={t} title={t} className="max-w-full truncate border border-gold/70 bg-paper/60 px-2 py-0.5 text-xs leading-5 text-ink-soft">
+        <li key={t} title={t} className="max-w-full truncate border border-hairline/70 bg-paper/60 px-2 py-0.5 text-xs leading-5 text-ink-soft">
           {t}
         </li>
       ))}

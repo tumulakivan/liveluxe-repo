@@ -3,15 +3,22 @@ import { FIELD_BY_KEY, FIELDS, fieldValueSchemas, formatValue } from '@repo/shar
 import { Hono, type MiddlewareHandler } from 'hono';
 import { z } from 'zod';
 import { db, transaction } from './db.ts';
+import { MANUAL_DASHBOARD_KEYS } from './manual.ts';
 
 // The Claude fill: an access token lets a script fill the fields Hostaway's API doesn't return
 // (source "dashboard"), many properties per request, with a dry run. Nothing else is writable.
+// Since 2026-11-25 that is the shown dashboard fields (none at the moment) plus the three the house
+// manual parts fall back on (house manual, Airbnb check-in instructions, Airbnb checkout tasks);
+// the next Sync Hostaway uses what Claude filled.
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 const now = () => new Date().toISOString();
 const TOKEN_PREFIX = 'lrt_';
 
-export const DASHBOARD_FIELDS = FIELDS.filter((f) => f.source === 'dashboard' && !f.hidden);
+export const DASHBOARD_FIELDS = [
+  ...FIELDS.filter((f) => f.source === 'dashboard' && !f.hidden),
+  ...MANUAL_DASHBOARD_KEYS.map((k) => FIELD_BY_KEY.get(k)!),
+];
 const DASHBOARD_KEYS = new Set(DASHBOARD_FIELDS.map((f) => f.key));
 
 // ---------------------------------------------------------------- tokens (managed by admins)

@@ -99,7 +99,7 @@ function useReportState() {
 
 function Block({ title, hint, first, children }: { title: string; hint?: string; first?: boolean; children: ReactNode }) {
   return (
-    <section className={clsx('grid gap-x-10 gap-y-3 py-6 lg:grid-cols-[13rem_minmax(0,1fr)]', first ? 'pt-0' : 'border-t border-gold')}>
+    <section className={clsx('grid gap-x-10 gap-y-3 py-6 lg:grid-cols-[13rem_minmax(0,1fr)]', first ? 'pt-0' : 'border-t border-hairline')}>
       <div>
         <h2 className="font-display text-[1.3rem] leading-tight font-semibold text-ink">{title}</h2>
         {hint && <p className="mt-1 text-[0.8125rem] leading-relaxed text-muted">{hint}</p>}
@@ -115,7 +115,7 @@ function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; c
       type="button"
       aria-pressed={on}
       onClick={onClick}
-      className={clsx('caps border-b py-1.5 transition-colors', on ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-gold hover:text-ink')}
+      className={clsx('caps border-b py-1.5 transition-colors', on ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-hairline hover:text-ink')}
     >
       {children}
     </button>
@@ -124,14 +124,14 @@ function Toggle({ on, onClick, children }: { on: boolean; onClick: () => void; c
 
 function Segmented<T extends string>({ label, value, options, onChange }: { label: string; value: T; options: [T, string][]; onChange: (v: T) => void }) {
   return (
-    <div role="group" aria-label={label} className="flex w-fit border border-gold">
+    <div role="group" aria-label={label} className="flex w-fit border border-hairline">
       {options.map(([v, text]) => (
         <button
           key={v}
           type="button"
           aria-pressed={value === v}
           onClick={() => onChange(v)}
-          className={clsx('caps h-9 px-3 whitespace-nowrap transition-colors', value === v ? 'bg-ink text-paper' : 'text-muted hover:bg-gold-wash hover:text-ink')}
+          className={clsx('caps h-9 px-3 whitespace-nowrap transition-colors', value === v ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink')}
         >
           {text}
         </button>
@@ -160,8 +160,8 @@ function DownloadLink({ href, disabled, primary, describedBy, children }: { href
             ? 'cursor-not-allowed bg-muted text-paper'
             : 'bg-ink text-paper hover:bg-bronze-deep'
           : disabled
-            ? 'cursor-not-allowed border border-gold/60 text-muted'
-            : 'border border-gold text-ink hover:bg-gold-wash',
+            ? 'cursor-not-allowed border border-hairline/60 text-muted'
+            : 'border border-hairline text-ink hover:bg-hover-wash',
       )}
     >
       <Download aria-hidden className="size-4" strokeWidth={1.75} />
@@ -199,12 +199,12 @@ function ColumnPicker({ columns, setColumns }: { columns: string[]; setColumns: 
           {columns.length} column{columns.length === 1 ? '' : 's'} chosen
         </span>
       </div>
-      <details className="group border border-gold/60 bg-paper/50">
+      <details className="group border border-hairline/60 bg-paper/50">
         <summary className="caps flex cursor-pointer list-none items-center gap-1.5 px-4 py-3 text-bronze hover:text-ink [&::-webkit-details-marker]:hidden">
           Choose columns
           <ChevronDown aria-hidden className="size-3.5 transition-transform duration-200 group-open:rotate-180" strokeWidth={1.75} />
         </summary>
-        <div className="grid gap-x-8 gap-y-5 border-t border-gold/60 px-4 py-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-x-8 gap-y-5 border-t border-hairline/60 px-4 py-4 sm:grid-cols-2 xl:grid-cols-3">
           {groups.map(([group, cols]) => (
             <fieldset key={group}>
               <legend className="caps mb-2 text-bronze">{group}</legend>
@@ -239,7 +239,7 @@ function ColumnPicker({ columns, setColumns }: { columns: string[]; setColumns: 
 export function ReportsPage() {
   const { state, set, columns, setColumns, qs } = useReportState();
   const platforms = useAdminPlatforms();
-  const facets = useAdminFacets(new URLSearchParams({ includeArchived: '1', pageSize: '24' }).toString());
+  const facets = useAdminFacets(new URLSearchParams({ includeArchived: '1', pageSize: '24', stage: 'all' }).toString());
   const preview = useReportPreview(qs);
   const [announce, setAnnounce] = useState('');
 
@@ -290,7 +290,7 @@ export function ReportsPage() {
 
       <Block first title="Platforms" hint="Set each platform to Listed or Not listed. Leave it on Any to ignore it.">
         {platforms.isError && <Notice>{platforms.error.message}</Notice>}
-        <ul className="divide-y divide-gold/35">
+        <ul className="divide-y divide-hairline/35">
           {active.map((p) => (
             <li key={p.key} className="flex flex-wrap items-center justify-between gap-3 py-2.5">
               <span className="text-[0.9375rem] text-ink">{p.name}</span>
@@ -335,7 +335,7 @@ export function ReportsPage() {
               Active tag
             </Toggle>
             <Toggle on={state.manualOnly} onClick={() => set({ manualOnly: state.manualOnly ? null : '1' })}>
-              Added by hand
+              Onboarding only
             </Toggle>
             <span className="flex items-center gap-3">
               <span className="text-sm text-ink-soft">Archived</span>
@@ -382,7 +382,7 @@ export function ReportsPage() {
         <ColumnPicker columns={columns} setColumns={setColumns} />
       </Block>
 
-      <section aria-labelledby="preview-h" className="border-t border-gold pt-6">
+      <section aria-labelledby="preview-h" className="border-t border-hairline pt-6">
         <div className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
           <h2 id="preview-h" className="font-display flex items-baseline gap-3 text-[1.6rem] leading-tight font-semibold text-ink">
             Preview
@@ -407,9 +407,9 @@ export function ReportsPage() {
         )}
         {preview.isError && <Notice>{preview.error.message}</Notice>}
         {noColumns ? (
-          <p className="border-y border-gold py-10 text-center text-ink-soft">Choose at least one column.</p>
+          <p className="border-y border-hairline py-10 text-center text-ink-soft">Choose at least one column.</p>
         ) : preview.data && preview.data.total === 0 ? (
-          <div className="border-y border-gold px-1 py-12 text-center">
+          <div className="border-y border-hairline px-1 py-12 text-center">
             <h3 className="font-display text-3xl font-semibold text-ink">No properties match</h3>
             <p className="mx-auto mt-3 max-w-[48ch] text-ink-soft">Loosen a platform rule, a tag or an empty-field filter.</p>
             <Button className="mt-6" onClick={() => set(Object.fromEntries(['on', 'notOn', 'match', 'notListed', 'cities', 'tags', 'activeOnly', 'manualOnly', 'empty', 'includeArchived', 'archivedOnly'].map((k) => [k, null])))}>
@@ -419,9 +419,9 @@ export function ReportsPage() {
         ) : (
           <div className={clsx(preview.isPlaceholderData && 'opacity-60')}>
             {/* Phones: one stacked block per property, label beside value. */}
-            <ul className="border-t border-gold md:hidden">
+            <ul className="border-t border-hairline md:hidden">
               {(preview.data?.rows ?? []).map((r, i) => (
-                <li key={i} className="border-b border-gold/45 py-4">
+                <li key={i} className="border-b border-hairline/45 py-4">
                   {r.map((v, j) =>
                     preview.data!.columns[j]!.key === 'p:name' ? (
                       <h3 key="name" className="font-display mb-2 text-[1.1rem] leading-tight font-semibold text-ink">
@@ -443,7 +443,7 @@ export function ReportsPage() {
                 </li>
               ))}
             </ul>
-          <div className="relative hidden overflow-x-auto border-t border-gold md:block">
+          <div className="relative hidden overflow-x-auto border-t border-hairline md:block">
             <table className="w-full border-collapse text-left text-sm">
               <thead>
                 <tr className="caps text-bronze">
@@ -456,7 +456,7 @@ export function ReportsPage() {
               </thead>
               <tbody>
                 {(preview.data?.rows ?? []).map((r, i) => (
-                  <tr key={i} className="border-t border-gold/45 align-top transition-colors hover:bg-paper">
+                  <tr key={i} className="border-t border-hairline/45 align-top transition-colors hover:bg-paper">
                     {r.map((v, j) => (
                       <td key={j} className={clsx('tabular py-2.5 pr-4', preview.data?.columns[j]?.key === 'p:name' ? 'font-display text-[1.1rem] font-semibold text-ink' : 'text-ink-soft')}>
                         <span className="line-clamp-4 whitespace-pre-line">{v || <span className="text-muted">—</span>}</span>

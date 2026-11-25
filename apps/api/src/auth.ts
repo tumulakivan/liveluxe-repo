@@ -1,11 +1,13 @@
 import { createHash, randomBytes } from 'node:crypto';
+import type { Role } from '@repo/shared';
 import type { Context, MiddlewareHandler } from 'hono';
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie';
 import { config } from './config.ts';
 import { db } from './db.ts';
 import { hashPassword, verifyPassword } from './passwords.ts';
 
-// Admin sign-in: random session tokens in an httpOnly cookie; only a SHA-256 of the token is stored.
+// Sign-in for admins and contributors: random session tokens in an httpOnly cookie; only a SHA-256 of
+// the token is stored. Both live in the admins table, told apart by role.
 
 const COOKIE = 'lr_session';
 const SESSION_DAYS = 14;
@@ -15,9 +17,10 @@ export interface Admin {
   id: number;
   username: string;
   mustChangePassword: boolean;
+  role: Role;
 }
 
-type AdminRow = { id: number; username: string; must_change_password: number; password_hash: string };
+type AdminRow = { id: number; username: string; must_change_password: number; password_hash: string; role: Role };
 
 const sha256 = (s: string) => createHash('sha256').update(s).digest('hex');
 
@@ -43,7 +46,7 @@ export async function signIn(c: Context, username: string, password: string): Pr
   const key = `${clientIp(c)}|${username.toLowerCase()}`;
   if (limited(key)) return 'limited';
   const row = db
-    .prepare('SELECT id, username, must_change_password, password_hash FROM admins WHERE username = ?')
+    .prepare('SELECT id, username, must_change_password, password_hash, role FROM admins WHERE username = ?')
     .get(username.trim()) as AdminRow | undefined;
   dummyHash ??= hashPassword(randomBytes(16).toString('hex'));
   const ok = await verifyPassword(password, row?.password_hash ?? (await dummyHash));
@@ -71,7 +74,7 @@ export async function signIn(c: Context, username: string, password: string): Pr
     path: '/',
     expires,
   });
-  return { id: row.id, username: row.username, mustChangePassword: row.must_change_password === 1 };
+  return { id: row.id, username: row.username, mustChangePassword: row.must_change_password === 1, role: row.role };
 }
 
 export function currentAdmin(c: Context): Admin | null {
@@ -79,11 +82,11 @@ export function currentAdmin(c: Context): Admin | null {
   if (!token) return null;
   const row = db
     .prepare(
-      `SELECT a.id, a.username, a.must_change_password FROM sessions s JOIN admins a ON a.id = s.admin_id
+      `SELECT a.id, a.username, a.must_change_password, a.role FROM sessions s JOIN admins a ON a.id = s.admin_id
        WHERE s.token_hash = ? AND s.expires_at > ?`,
     )
     .get(sha256(token), new Date().toISOString()) as Omit<AdminRow, 'password_hash'> | undefined;
-  return row ? { id: row.id, username: row.username, mustChangePassword: row.must_change_password === 1 } : null;
+  return row ? { id: row.id, username: row.username, mustChangePassword: row.must_change_password === 1, role: row.role } : null;
 }
 
 export function signOut(c: Context) {
@@ -107,12 +110,18 @@ export async function changePassword(admin: Admin, current: string, next: string
 
 export type AdminEnv = { Variables: { admin: Admin } };
 
-/** Admin routes: a valid session, and a password already changed from the starting one. */
-export const requireAdmin: MiddlewareHandler<AdminEnv> = async (c, next) => {
+/** Dashboard routes: a valid session (admin or contributor), and a password already changed from the starting one. */
+export const requireSignedIn: MiddlewareHandler<AdminEnv> = async (c, next) => {
   const admin = currentAdmin(c);
   if (!admin) return c.json({ error: 'Sign in to continue.', code: 'signed_out' }, 401);
   if (admin.mustChangePassword) return c.json({ error: 'Choose a new password first.', code: 'password_change_required' }, 403);
   c.set('admin', admin);
+  await next();
+};
+
+/** After requireSignedIn: the systems team only. */
+export const adminOnly: MiddlewareHandler<AdminEnv> = async (c, next) => {
+  if (c.get('admin').role !== 'admin') return c.json({ error: 'Only the systems team (admins) can do this.' }, 403);
   await next();
 };
 

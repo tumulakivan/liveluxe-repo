@@ -8,6 +8,7 @@ const getJson = <T,>(url: string) => fetchJson<T>(url, { headers: { Accept: 'app
 function listParams(s: BrowseState, withPaging: boolean): string {
   const p = new URLSearchParams();
   if (s.q) p.set('q', s.q);
+  if (s.stage !== 'live') p.set('stage', s.stage);
   if (s.platforms.length) p.set('platforms', s.platforms.join(','));
   if (s.notListed) p.set('notListed', '1');
   if (s.cities.length) p.set('cities', s.cities.join(','));
@@ -33,6 +34,7 @@ export function useProperties(s: BrowseState) {
 export function useFacets(s: BrowseState) {
   const p = new URLSearchParams();
   if (s.q) p.set('q', s.q);
+  if (s.stage !== 'live') p.set('stage', s.stage);
   if (s.includeArchived) p.set('includeArchived', '1');
   const qs = p.toString();
   return useQuery({

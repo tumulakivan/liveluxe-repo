@@ -89,12 +89,33 @@ function CopyButton({ text, label }: { text: string; label: string }) {
   );
 }
 
+const URL_PART = /(https?:\/\/[^\s<>"')\]]+)/;
+
+/** Text with its web addresses as links (check-in videos, the photos folder). */
+function Linked({ text }: { text: string }) {
+  return (
+    <>
+      {text.split(URL_PART).map((part, i) =>
+        i % 2 === 1 ? (
+          <a key={i} href={part} target="_blank" rel="noreferrer noopener" className="[overflow-wrap:anywhere] text-bronze underline hover:text-ink">
+            {part}
+          </a>
+        ) : (
+          part
+        ),
+      )}
+    </>
+  );
+}
+
 function LongText({ text }: { text: string }) {
   const [open, setOpen] = useState(false);
   const long = text.length > 420 || text.split('\n').length > 7;
   return (
     <div>
-      <p className={clsx('max-w-[68ch] leading-relaxed whitespace-pre-line text-ink-soft', long && !open && 'line-clamp-6')}>{text}</p>
+      <p className={clsx('max-w-[68ch] leading-relaxed whitespace-pre-line text-ink-soft', long && !open && 'line-clamp-6')}>
+        <Linked text={text} />
+      </p>
       {long && (
         <button type="button" onClick={() => setOpen(!open)} className="caps mt-2 text-[0.625rem] text-bronze underline">
           {open ? 'Show less' : 'Show all'}
@@ -104,8 +125,16 @@ function LongText({ text }: { text: string }) {
   );
 }
 
-/** Hostaway-sourced fields stay read-only on imported properties; everything else is an admin's to edit. */
-const canEdit = (def: FieldDef, p: PropertyDetail) => def.source !== 'hostaway' || p.hostawayId === null;
+/**
+ * Hostaway-sourced fields stay read-only on imported properties; everything else is an admin's to edit.
+ * A fillable field (the house manual parts) is the admin's to fill while Hostaway has nothing for it.
+ */
+const canEdit = (def: FieldDef, p: PropertyDetail, value: FieldValue | undefined) =>
+  def.source !== 'hostaway' ||
+  p.hostawayId === null ||
+  (!!def.fillable && !(value?.source === 'sync' && formatValue(def, value.value) !== null));
+
+const SYNC_BY = 'Sync Hostaway';
 
 function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue | undefined; p: PropertyDetail; admin: boolean }) {
   const [editing, setEditing] = useState(false);
@@ -117,23 +146,33 @@ function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue |
       setRefocus(false);
     }
   }, [editing, refocus]);
-  const editable = admin && canEdit(def, p);
+  const editable = admin && canEdit(def, p, value);
   const text = formatValue(def, value?.value);
-  // Synced values are credited once per section; only values set by Claude or an admin are marked here.
+  // Synced values are credited once per section. Marked here: values set by Claude or an admin, and
+  // synced values taken from somewhere other than the usual place (Airbnb's check-in instructions).
   const provenance =
-    value && value.source !== 'sync' && text !== null
-      ? `Set by ${value.updatedBy ?? SOURCE_LABEL[value.source]} · ${formatWhen(value.updatedAt)}`
-      : null;
+    !value || text === null
+      ? null
+      : value.source !== 'sync'
+        ? `Set by ${value.updatedBy ?? SOURCE_LABEL[value.source]} · ${formatWhen(value.updatedAt)}`
+        : value.updatedBy && value.updatedBy !== SYNC_BY
+          ? `From ${value.updatedBy}`
+          : null;
   const empty = def.source === 'dashboard' && !value ? 'Not filled yet' : 'Empty';
+  const list = Array.isArray(value?.value) ? (value.value as string[]) : null;
+  const url = def.type === 'text' && text !== null && URL_PART.test(text) && !/\s/.test(text);
   return (
     <div className="group/field grid grid-cols-[minmax(0,1fr)] gap-1 py-2.5 sm:grid-cols-[13rem_minmax(0,1fr)] sm:gap-6">
-      <dt className="flex items-start gap-1.5 pt-0.5 text-[0.8125rem] leading-snug text-muted">
-        {def.label}
-        {admin && !editable && (
-          <span title="From Hostaway. Change it there, then run Sync Hostaway." className="mt-px shrink-0">
-            <Lock aria-label="From Hostaway, read-only" className="size-3 text-muted" strokeWidth={1.75} />
-          </span>
-        )}
+      <dt className="flex flex-col gap-0.5 pt-0.5 text-[0.8125rem] leading-snug text-muted">
+        <span className="flex items-start gap-1.5">
+          {def.label}
+          {admin && !editable && (
+            <span title="From Hostaway. Change it there, then run Sync Hostaway." className="mt-px shrink-0">
+              <Lock aria-label="From Hostaway, read-only" className="size-3 text-muted" strokeWidth={1.75} />
+            </span>
+          )}
+        </span>
+        {def.hint && admin && <span className="text-[0.6875rem] leading-snug text-muted/80">{def.hint}</span>}
       </dt>
       <dd className="min-w-0 text-[0.9375rem]">
         {editing ? (
@@ -153,8 +192,21 @@ function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue |
           <span className="text-sm text-muted">{empty}</span>
         ) : def.type === 'longtext' ? (
           <LongText text={text} />
-        ) : def.type === 'list' && def.key === 'tags' && Array.isArray(value?.value) ? (
-          <Tags tags={value.value as string[]} />
+        ) : list && def.display === 'lines' ? (
+          <ul className="flex flex-col gap-0.5 text-ink">
+            {list.map((item) => (
+              <li key={item}>{item}</li>
+            ))}
+          </ul>
+        ) : list && (def.display === 'chips' || def.key === 'tags') ? (
+          <Tags tags={list} label={def.label} />
+        ) : url ? (
+          <span className="flex items-start gap-1">
+            <span className="min-w-0">
+              <Linked text={text} />
+            </span>
+            <CopyButton text={text} label={def.label} />
+          </span>
         ) : (
           <span className="flex items-start gap-1">
             <span className="tabular min-w-0 select-all [overflow-wrap:anywhere] text-ink">{text}</span>
@@ -169,7 +221,7 @@ function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue |
             type="button"
             onClick={() => setEditing(true)}
             aria-label={`Edit ${def.label}`}
-            className="grid size-8 shrink-0 place-items-center text-muted transition-colors hover:bg-gold-wash hover:text-bronze"
+            className="grid size-8 shrink-0 place-items-center text-muted transition-colors hover:bg-hover-wash hover:text-bronze"
           >
             <Pencil aria-hidden className="size-3.5" strokeWidth={1.5} />
           </button>
@@ -184,21 +236,19 @@ function FieldRow({ def, value, p, admin }: { def: FieldDef; value: FieldValue |
 function SectionBlock({ section, p, admin }: { section: Section; p: PropertyDetail; admin: boolean }) {
   return (
     <section id={`sec-${section.key}`} data-section={section.key} aria-labelledby={`h-${section.key}`} className="scroll-mt-6 pt-8 first:pt-2">
-      <h3 id={`h-${section.key}`} className="font-display flex items-baseline gap-3 border-b border-gold pb-2 text-[1.6rem] leading-tight font-semibold text-ink">
+      <h3 id={`h-${section.key}`} className="font-display flex items-baseline gap-3 border-b border-hairline pb-2 text-[1.6rem] leading-tight font-semibold text-ink">
         {section.label}
         <span className="caps tabular text-[0.625rem] font-normal text-muted">
           {section.filled} of {section.total} filled
         </span>
       </h3>
       {section.total === 0 ? (
-        <p className="py-4 text-sm text-muted">
-          {section.key === 'channel' ? 'Not listed on Airbnb, Booking.com or Vrbo, so there are no channel fields.' : 'No fields.'}
-        </p>
+        <p className="py-4 text-sm text-muted">No fields.</p>
       ) : (
         section.groups.map((g, i) => (
           <div key={`${g.label}-${i}`}>
             {g.label && <h4 className="caps pt-5 pb-1 text-[0.625rem] text-bronze">{g.label}</h4>}
-            <dl className="divide-y divide-gold/35">
+            <dl className="divide-y divide-hairline/35">
               {g.fields.map((f) => (
                 <FieldRow key={f.key} def={f} value={p.values[f.key]} p={p} admin={admin} />
               ))}
@@ -239,8 +289,10 @@ function useActiveSection(root: HTMLElement | null, keys: string[]) {
   return active;
 }
 
-function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
+function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) {
   const me = useMe();
+  // Contributors change onboarding listings only; on existing listings they get the read-only view.
+  const admin = signedIn && (me.data?.role === 'admin' || p.hostawayId === null);
   const sections = useMemo(() => buildSections(p), [p]);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
   const keys = useMemo(() => sections.map((s) => s.key), [sections]);
@@ -256,7 +308,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
 
   return (
     <div ref={setScroller} className="h-full overflow-y-auto overscroll-contain">
-      <header className="grid grid-cols-[minmax(0,1fr)] gap-5 border-b border-gold px-6 pt-6 pb-6 sm:grid-cols-[13rem_minmax(0,1fr)] sm:px-8">
+      <header className="grid grid-cols-[minmax(0,1fr)] gap-5 border-b border-hairline px-6 pt-6 pb-6 sm:grid-cols-[13rem_minmax(0,1fr)] sm:px-8">
         <div className="aspect-[4/3] overflow-hidden bg-stone sm:aspect-auto sm:h-40">
           {photo && !photoFailed ? (
             <img src={photo} alt={`Display photo of ${p.name}`} onError={() => setFailedSrc(photo)} className="size-full object-cover" />
@@ -270,7 +322,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
         <div className="flex min-w-0 flex-col gap-3 pr-8">
           <Dialog.Title className="font-display text-[1.9rem] leading-[1.08] font-semibold tracking-[-0.005em] [overflow-wrap:anywhere] text-ink">{p.name}</Dialog.Title>
           <Dialog.Description className="caps tabular flex flex-wrap gap-x-2 text-[0.625rem] text-bronze">
-            <span>{p.hostawayId ? `Listing ${p.hostawayId}` : 'Not in Hostaway yet'}</span>
+            <span>{p.hostawayId ? `Listing ${p.hostawayId}` : 'Onboarding · not in Hostaway yet'}</span>
             {p.city && <span>· {p.city}</span>}
             <span>· {p.photoCount ?? 0} photos</span>
             {p.lastSyncedAt && <span className="text-muted">· Synced {formatWhen(p.lastSyncedAt)}</span>}
@@ -278,7 +330,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
           </Dialog.Description>
           <PlatformBubbles platforms={p.platforms} size="md" />
           <Tags tags={p.tags} />
-          {!admin && me.data && !me.data.mustChangePassword && (
+          {!signedIn && me.data && !me.data.mustChangePassword && (
             <Link to={`/admin/properties?p=${p.id}`} className="caps w-fit text-bronze underline hover:text-ink">
               Edit in dashboard
             </Link>
@@ -288,7 +340,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
       {admin && <AdminTools p={p} />}
 
       <div className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[11rem_minmax(0,1fr)]">
-        <nav aria-label="Sections" className="sticky top-0 z-10 border-b border-gold bg-paper/95 backdrop-blur-sm sm:h-fit sm:border-b-0 sm:bg-transparent sm:backdrop-blur-none">
+        <nav aria-label="Sections" className="sticky top-0 z-10 border-b border-hairline bg-paper/95 backdrop-blur-sm sm:h-fit sm:border-b-0 sm:bg-transparent sm:backdrop-blur-none">
           <ul className="flex gap-x-5 overflow-x-auto px-6 py-3 pr-12 [scrollbar-width:none] [mask-image:linear-gradient(to_right,black_82%,transparent)] sm:[mask-image:none] sm:flex-col sm:gap-0.5 sm:px-0 sm:py-8 sm:pr-0 sm:pl-8">
             {sections.map((s) => (
               <li key={s.key}>
@@ -298,7 +350,7 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
                   aria-current={active === s.key ? 'location' : undefined}
                   className={clsx(
                     'caps w-full border-b py-1.5 text-left text-[0.625rem] leading-snug whitespace-nowrap transition-colors sm:border-b-0 sm:border-l sm:py-1.5 sm:pl-3 sm:whitespace-normal',
-                    active === s.key ? 'border-bronze text-ink' : 'border-transparent text-muted hover:text-ink sm:border-gold/50',
+                    active === s.key ? 'border-bronze text-ink' : 'border-transparent text-muted hover:text-ink sm:border-hairline/50',
                   )}
                 >
                   {s.label}
@@ -311,9 +363,9 @@ function Dossier({ p, admin }: { p: PropertyDetail; admin: boolean }) {
           {sections.map((s) => (
             <SectionBlock key={s.key} section={s} p={p} admin={admin} />
           ))}
-          <p className="mt-12 border-t border-gold pt-4 text-xs text-muted">
-            {p.lastSyncedAt ? `Hostaway values last synced ${formatWhen(p.lastSyncedAt)}.` : 'Never synced from Hostaway.'} Values set by
-            Claude or an admin say so beneath them. “Not filled yet” marks fields that only Hostaway’s dashboard shows.
+          <p className="mt-12 border-t border-hairline pt-4 text-xs text-muted">
+            {p.lastSyncedAt ? `Hostaway values last synced ${formatWhen(p.lastSyncedAt)}.` : 'Never synced from Hostaway.'} The house manual
+            parts are cut out of Hostaway’s house manual. Values set by an admin, or taken from Airbnb’s settings, say so beneath them.
           </p>
         </div>
       </div>
@@ -343,7 +395,7 @@ export function DetailPanel({ id, onClose, mode = 'view' }: { id: number | null;
             const openers = document.querySelectorAll<HTMLElement>(`[data-open-id="${lastId.current}"]`);
             [...openers].find((el) => el.offsetParent !== null)?.focus();
           }}
-          className="fixed inset-y-0 right-0 z-40 w-full max-w-[52rem] border-l border-gold bg-paper shadow-[-24px_0_48px_-24px_rgb(10_10_12/0.28)] animate-[panel-in_420ms_var(--ease-out-expo)] focus:outline-none"
+          className="fixed inset-y-0 right-0 z-40 w-full max-w-[52rem] border-l border-hairline bg-paper shadow-[-24px_0_48px_-24px_rgb(10_10_12/0.28)] animate-[panel-in_420ms_var(--ease-out-expo)] focus:outline-none"
         >
           <Dialog.Close
             aria-label="Close property"

@@ -7,6 +7,7 @@ import type {
   OverviewResponse,
   PropertyDetail,
   ReportPreview,
+  Role,
   SyncRun,
 } from '@repo/shared';
 import { keepPreviousData, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -40,6 +41,9 @@ export function useSignIn() {
   });
 }
 
+/** The main app's lists answer differently when signed in (onboarding listings), so drop them on sign-out. */
+const MAIN_APP_QUERIES = [['properties'], ['facets'], ['property']];
+
 export function useSignOut() {
   const qc = useQueryClient();
   return useMutation({
@@ -47,6 +51,7 @@ export function useSignOut() {
     onSuccess: () => {
       qc.setQueryData(['me'], null);
       qc.removeQueries({ queryKey: ['admin'] });
+      for (const queryKey of MAIN_APP_QUERIES) qc.removeQueries({ queryKey });
     },
   });
 }
@@ -138,7 +143,27 @@ export const useUploadPhoto = (id: number) =>
   });
 
 export const useCreateProperty = () =>
-  usePropertyWrite((name: string) => request<PropertyDetail>('/api/admin/properties', json('POST', { name })));
+  usePropertyWrite((v: { name: string; tags: string[] }) => request<PropertyDetail>('/api/admin/properties', json('POST', v)));
+
+/** Every tag in use, most used first, for the tag pickers. */
+export function useAllTags() {
+  const facets = useAdminFacets(new URLSearchParams({ stage: 'all', includeArchived: '1' }).toString());
+  return { tags: facets.data?.tags ?? [], isError: facets.isError };
+}
+
+// ---- onboarding
+
+/** Approve with the Hostaway listing ID, in one step. */
+export const useApprove = (id: number) =>
+  usePropertyWrite((hostawayId: number) => request<PropertyDetail>(`/api/admin/properties/${id}/approve`, json('POST', { hostawayId })));
+
+export const useUnapprove = (id: number) =>
+  usePropertyWrite(() => request<PropertyDetail>(`/api/admin/properties/${id}/unapprove`, json('POST')));
+
+/** The signed-in person's role. Contributors only change onboarding listings. */
+export function useRole() {
+  return useMe().data?.role ?? null;
+}
 
 // ---- platforms
 
@@ -177,7 +202,7 @@ function useAccountWrite<V>(fn: (v: V) => Promise<AdminAccount[]>) {
 }
 
 export const useAddAccount = () =>
-  useAccountWrite((v: { username: string; password: string }) => request<AdminAccount[]>('/api/admin/accounts', json('POST', v)));
+  useAccountWrite((v: { username: string; password: string; role: Role }) => request<AdminAccount[]>('/api/admin/accounts', json('POST', v)));
 
 export const useResetAccount = () =>
   useAccountWrite((v: { id: number; password: string }) => request<AdminAccount[]>(`/api/admin/accounts/${v.id}/reset`, json('POST', { password: v.password })));

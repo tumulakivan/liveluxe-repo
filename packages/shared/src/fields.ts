@@ -1,6 +1,7 @@
-// The field registry: every property field the app knows, in display order.
-// The API (sync, storage, editing) and the web app (panel, reports) both read it.
-// Source of the list: the vault note "Listing Repo/Field Map".
+// The field registry. FIELDS is what the app shows (panel, reports, missing fields), in display order:
+// the short list Live Luxe keeps per property, set 2026-11-25. Every field shown before that is in
+// RETIRED_FIELDS: Sync Hostaway still stores those values, nothing shows them, and moving one back
+// into FIELDS brings it back with its data.
 
 export type PlatformKey = 'airbnb' | 'bookingcom' | 'vrbo' | 'marriott';
 
@@ -23,6 +24,12 @@ export type FieldType =
   | 'list';
 
 export type SectionKey =
+  | 'property'
+  | 'keys'
+  | 'manual'
+  | 'amenities'
+  | 'photos'
+  // Sections of the retired fields.
   | 'basic'
   | 'address'
   | 'media'
@@ -47,19 +54,22 @@ export interface FieldDef {
   type: FieldType;
   /** Shown only when the property is listed on this platform. */
   platform?: PlatformKey;
-  /** Kept in storage but not shown, e.g. fields of platforms on hold. */
+  /** Kept in storage but not shown: retired fields, and fields of platforms on hold. */
   hidden?: boolean;
+  /** A Hostaway field an admin may fill by hand while Hostaway has no value for it. The next sync that finds one replaces it. */
+  fillable?: boolean;
+  /** How a list shows in the panel: as chips (default for tags) or one item per line. */
+  display?: 'chips' | 'lines';
+  /** Shown under the label in the panel. */
+  hint?: string;
 }
 
 export const SECTIONS: SectionDef[] = [
-  { key: 'basic', label: 'Basic info' },
-  { key: 'address', label: 'Address' },
-  { key: 'media', label: 'Media' },
-  { key: 'markups', label: 'Markups' },
-  { key: 'additional', label: 'Additional info & policies' },
-  { key: 'booking', label: 'Booking settings' },
-  { key: 'channel', label: 'Channel specific' },
-  { key: 'custom', label: 'Custom fields' },
+  { key: 'property', label: 'Property' },
+  { key: 'keys', label: 'Keys' },
+  { key: 'manual', label: 'House manual' },
+  { key: 'amenities', label: 'Amenities' },
+  { key: 'photos', label: 'Photos' },
 ];
 
 const f = (
@@ -68,22 +78,47 @@ const f = (
   section: SectionKey,
   source: FieldSource,
   type: FieldType,
-  extra: Partial<Pick<FieldDef, 'group' | 'platform' | 'hidden'>> = {},
+  extra: Partial<Pick<FieldDef, 'group' | 'platform' | 'hidden' | 'fillable' | 'display' | 'hint'>> = {},
 ): FieldDef => ({ key, label, section, source, type, ...extra });
 
+const FROM_MANUAL = "From Hostaway's house manual";
+
 export const FIELDS: FieldDef[] = [
+  // Property
+  f('propertyType', 'Property type', 'property', 'hostaway', 'text'),
+  f('personCapacity', 'Guests', 'property', 'hostaway', 'number'),
+  f('bedrooms', 'Bedrooms', 'property', 'hostaway', 'number'),
+  f('bathrooms', 'Bathrooms', 'property', 'hostaway', 'number'),
+  f('beds', 'Beds', 'property', 'hostaway', 'number'),
+  f('bedTypes', 'Bed types', 'property', 'hostaway', 'list', { display: 'lines' }),
+  f('minNights', 'Minimum stay (nights)', 'property', 'hostaway', 'number'),
+
+  // Keys
+  f('cfReusableCode', 'Collection / reusable code', 'keys', 'hostaway', 'text'),
+  f('cfStore', 'Store address (for keys)', 'keys', 'hostaway', 'longtext'),
+
+  // House manual: cut out of Hostaway's manual by Sync Hostaway (apps/api/src/manual.ts).
+  f('manualCheckIn', 'Check-in instructions', 'manual', 'hostaway', 'longtext', { fillable: true, hint: `${FROM_MANUAL}, or Airbnb's check-in instructions` }),
+  f('manualCheckOut', 'Check-out instructions', 'manual', 'hostaway', 'longtext', { fillable: true, hint: `${FROM_MANUAL}, or Airbnb's checkout tasks` }),
+  f('manualRubbish', 'Rubbish', 'manual', 'hostaway', 'longtext', { fillable: true, hint: FROM_MANUAL }),
+  f('manualParking', 'Parking', 'manual', 'hostaway', 'longtext', { fillable: true, hint: `${FROM_MANUAL} and its parking field` }),
+
+  // Amenities
+  f('amenities', 'Amenities', 'amenities', 'hostaway', 'list', { display: 'chips' }),
+
+  // Photos
+  f('photosLink', 'Photos folder (Google Drive or Dropbox)', 'photos', 'app', 'text'),
+];
+
+/** Fields shown until 2026-11-25. Still synced and stored; not shown anywhere. */
+const RETIRED: FieldDef[] = [
   // Basic info
   f('internalName', 'Internal listing name', 'basic', 'hostaway', 'text'),
   f('externalName', 'External listing name', 'basic', 'hostaway', 'text'),
   f('tags', 'Tags', 'basic', 'hostaway', 'list'),
   f('description', 'Description', 'basic', 'hostaway', 'longtext'),
-  f('propertyType', 'Property type', 'basic', 'hostaway', 'text'),
   f('roomType', 'Room type', 'basic', 'hostaway', 'text'),
-  f('personCapacity', 'Person capacity', 'basic', 'hostaway', 'number'),
   f('maxChildren', 'Maximum children', 'basic', 'hostaway', 'number'),
-  f('bedrooms', 'Bedrooms', 'basic', 'hostaway', 'number'),
-  f('beds', 'Beds', 'basic', 'hostaway', 'number'),
-  f('bathrooms', 'Bathrooms', 'basic', 'hostaway', 'number'),
   f('bathroomType', 'Bathroom type', 'basic', 'hostaway', 'text'),
   f('guestBathrooms', 'Guest bathrooms', 'basic', 'hostaway', 'number'),
   f('totalFloors', 'Total floor count', 'basic', 'dashboard', 'number'),
@@ -162,7 +197,6 @@ export const FIELDS: FieldDef[] = [
   f('gracePeriodCancel', 'Grace period to cancel after booking', 'additional', 'dashboard', 'boolean', { group: 'Cancellation exceptions', platform: 'bookingcom' }),
 
   // Booking settings
-  f('minNights', 'Minimum nights', 'booking', 'hostaway', 'number'),
   f('maxNights', 'Maximum nights', 'booking', 'hostaway', 'number'),
   f('gapNights', 'Reservations for gap nights', 'booking', 'dashboard', 'boolean'),
 
@@ -209,9 +243,10 @@ export const FIELDS: FieldDef[] = [
   f('cfHouseManual', 'House manual (custom field)', 'custom', 'hostaway', 'longtext'),
   f('cfLevelAndUnit', 'Level and unit', 'custom', 'hostaway', 'text'),
   f('cfParking', 'Parking', 'custom', 'hostaway', 'longtext'),
-  f('cfReusableCode', 'Reusable code', 'custom', 'hostaway', 'text'),
-  f('cfStore', 'Key store', 'custom', 'hostaway', 'longtext'),
-];
+].map((d) => ({ ...d, hidden: true }));
+
+/** Every field the app stores: the shown ones, then the retired ones. */
+export const ALL_FIELDS: FieldDef[] = [...FIELDS, ...RETIRED];
 
 /** Field key → Hostaway custom field name. */
 export const CUSTOM_FIELD_NAMES: Record<string, string> = {
@@ -224,4 +259,4 @@ export const CUSTOM_FIELD_NAMES: Record<string, string> = {
   cfStore: 'store',
 };
 
-export const FIELD_BY_KEY: ReadonlyMap<string, FieldDef> = new Map(FIELDS.map((d) => [d.key, d]));
+export const FIELD_BY_KEY: ReadonlyMap<string, FieldDef> = new Map(ALL_FIELDS.map((d) => [d.key, d]));

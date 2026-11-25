@@ -4,6 +4,7 @@ import { ImageOff } from 'lucide-react';
 import { useState } from 'react';
 import { PlatformBubbles } from '../components/PlatformBubbles.tsx';
 import { Tags } from '../components/Tags.tsx';
+import { onboardingStatus } from '../lib/onboarding.ts';
 
 type Open = (id: number) => void;
 
@@ -27,7 +28,9 @@ function Meta({ p }: { p: PropertySummary }) {
   return (
     // Items are told apart by colour, not separators, so a wrap never strands a dot.
     <p className="caps tabular flex flex-wrap gap-x-3 gap-y-1 text-[0.625rem]">
-      <span className="whitespace-nowrap text-bronze">{p.hostawayId ? `Listing ${p.hostawayId}` : 'Not in Hostaway yet'}</span>
+      <span className={p.hostawayId ? 'whitespace-nowrap text-bronze' : 'text-bronze'}>
+        {p.hostawayId ? `Listing ${p.hostawayId}` : (onboardingStatus(p) ?? 'Not in Hostaway yet')}
+      </span>
       {p.city && <span className="whitespace-nowrap text-ink-soft">{p.city}</span>}
       {p.archived && <span className="whitespace-nowrap text-muted">Archived</span>}
     </p>
@@ -61,7 +64,7 @@ function Photo({ src, className }: { src: string | null; className?: string }) {
 }
 
 const cardShell =
-  'group relative border border-gold/55 bg-paper/40 transition-[border-color,background-color] duration-300 hover:border-bronze hover:bg-paper has-[button:focus-visible]:border-bronze';
+  'group relative border border-hairline/55 bg-paper/40 transition-[border-color,background-color] duration-300 hover:border-bronze hover:bg-paper has-[button:focus-visible]:border-bronze';
 
 export function CardView({ items, onOpen }: { items: PropertySummary[]; onOpen: Open }) {
   return (
@@ -94,7 +97,7 @@ export function TileView({ items, onOpen }: { items: PropertySummary[]; onOpen: 
             <Tags tags={p.tags} max={2} />
           </div>
           {p.summary && (
-            <p className="mt-1 min-h-0 overflow-hidden border-t border-gold/45 pt-2.5 text-[0.8125rem] leading-relaxed text-ellipsis text-muted [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
+            <p className="mt-1 min-h-0 overflow-hidden border-t border-hairline/45 pt-2.5 text-[0.8125rem] leading-relaxed text-ellipsis text-muted [display:-webkit-box] [-webkit-box-orient:vertical] [-webkit-line-clamp:3]">
               {p.summary}
             </p>
           )}
@@ -108,9 +111,9 @@ export function ListView({ items, onOpen }: { items: PropertySummary[]; onOpen: 
   return (
     <>
       {/* Phones: stacked rows rather than a table scrolled sideways. */}
-      <ul className="border-t border-gold md:hidden">
+      <ul className="border-t border-hairline md:hidden">
         {items.map((p) => (
-          <li key={p.id} className="group relative flex flex-col gap-2 border-b border-gold/45 py-4 has-[button:focus-visible]:bg-paper">
+          <li key={p.id} className="group relative flex flex-col gap-2 border-b border-hairline/45 py-4 has-[button:focus-visible]:bg-paper">
             <OpenName p={p} onOpen={onOpen} className="font-display text-[1.1rem] leading-tight font-semibold text-ink" />
             <Meta p={p} />
             <div className="flex flex-wrap items-center justify-between gap-2">
@@ -128,7 +131,7 @@ export function ListView({ items, onOpen }: { items: PropertySummary[]; onOpen: 
 
 function ListTable({ items, onOpen }: { items: PropertySummary[]; onOpen: Open }) {
   return (
-    <div className="hidden overflow-x-auto border-t border-gold md:block">
+    <div className="hidden overflow-x-auto border-t border-hairline md:block">
       <table className="w-full min-w-[56rem] border-collapse text-left text-sm">
         <thead>
           <tr className="caps text-[0.625rem] text-bronze">
@@ -144,7 +147,7 @@ function ListTable({ items, onOpen }: { items: PropertySummary[]; onOpen: Open }
           {items.map((p) => (
             <tr
               key={p.id}
-              className="group relative border-t border-gold/45 transition-colors hover:bg-paper has-[button:focus-visible]:bg-paper"
+              className="group relative border-t border-hairline/45 transition-colors hover:bg-paper has-[button:focus-visible]:bg-paper"
             >
               <td className="py-3 pr-4">
                 <span className="flex items-center gap-3">
@@ -152,7 +155,7 @@ function ListTable({ items, onOpen }: { items: PropertySummary[]; onOpen: Open }
                   {p.archived && <span className="caps text-[0.625rem] text-muted">Archived</span>}
                 </span>
               </td>
-              <td className="tabular py-3 pr-4 text-ink-soft">{p.hostawayId ?? <span className="text-muted">None yet</span>}</td>
+              <td className="tabular py-3 pr-4 text-ink-soft">{p.hostawayId ?? <span className="text-muted">{p.onboarding ? 'Onboarding' : 'None yet'}</span>}</td>
               <td className="py-3 pr-4 text-ink-soft">{p.city ?? '—'}</td>
               <td className="py-3 pr-4">
                 <PlatformBubbles platforms={p.platforms} />
@@ -174,7 +177,7 @@ export function LoadingView({ view }: { view: 'card' | 'tile' | 'list' }) {
   return (
     <div aria-busy="true" aria-label="Loading properties">
       {view === 'list' ? (
-        <div className="flex flex-col gap-px border-t border-gold">
+        <div className="flex flex-col gap-px border-t border-hairline">
           {Array.from({ length: n }, (_, i) => (
             <div key={i} className="shimmer h-12" />
           ))}

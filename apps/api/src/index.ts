@@ -3,9 +3,9 @@ import { readFile } from 'node:fs/promises';
 import { relative, resolve } from 'node:path';
 import { serve } from '@hono/node-server';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { listQuerySchema } from '@repo/shared';
+import { listQuerySchema, type ListQuery } from '@repo/shared';
 import { z } from 'zod';
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { secureHeaders } from 'hono/secure-headers';
 import { admin, passwordRoute } from './admin.ts';
 import { fill } from './fill.ts';
@@ -56,7 +56,7 @@ app.post('/api/auth/sign-in', async (c) => {
   const result = await signIn(c, parsed.data.username, parsed.data.password);
   if (result === 'limited') return c.json({ error: 'Too many attempts. Wait 15 minutes, then try again.' }, 429);
   if (!result) return c.json({ error: 'That username and password don’t match.' }, 401);
-  return c.json({ username: result.username, mustChangePassword: result.mustChangePassword });
+  return c.json({ username: result.username, mustChangePassword: result.mustChangePassword, role: result.role });
 });
 
 app.post('/api/auth/sign-out', (c) => {
@@ -66,7 +66,7 @@ app.post('/api/auth/sign-out', (c) => {
 
 app.get('/api/auth/me', (c) => {
   const me = currentAdmin(c);
-  return c.json(me ? { username: me.username, mustChangePassword: me.mustChangePassword } : null);
+  return c.json(me ? { username: me.username, mustChangePassword: me.mustChangePassword, role: me.role } : null);
 });
 
 app.route('/api/auth/password', passwordRoute);
@@ -85,22 +85,32 @@ app.get('/photos/:file', async (c) => {
   return c.body(await readFile(path), 200, { 'Content-Type': type, 'Cache-Control': 'public, max-age=31536000, immutable' });
 });
 
+// The main app. Visitors only ever see existing listings; people signed in (admins and contributors,
+// with their own password set) may also ask for onboarding listings (?stage=onboarding|all).
+const signedIn = (c: Context) => {
+  const me = currentAdmin(c);
+  return !!me && !me.mustChangePassword;
+};
+const allowedStage = (c: Context, stage: ListQuery['stage']) => (signedIn(c) ? stage : 'live');
+
 app.get('/api/properties', (c) => {
   const parsed = listQuerySchema.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid filter' }, 400);
-  return c.json(listProperties({ ...parsed.data, removed: 'hide', manualOnly: false, activeOnly: false, archivedOnly: false }));
+  const stage = allowedStage(c, parsed.data.stage);
+  return c.json(listProperties({ ...parsed.data, removed: 'hide', stage, manualOnly: false, activeOnly: false, archivedOnly: false }));
 });
 
 app.get('/api/facets', (c) => {
   const parsed = listQuerySchema.safeParse(c.req.query());
   if (!parsed.success) return c.json({ error: 'Invalid filter' }, 400);
-  return c.json(facets({ ...parsed.data, removed: 'hide' }));
+  return c.json(facets({ ...parsed.data, removed: 'hide', stage: allowedStage(c, parsed.data.stage) }));
 });
 
 app.get('/api/properties/:id', (c) => {
   const id = Number(c.req.param('id'));
   const property = Number.isInteger(id) ? getProperty(id) : null;
-  return property ? c.json(property) : c.json({ error: 'Property not found' }, 404);
+  if (!property || (property.hostawayId === null && !signedIn(c))) return c.json({ error: 'Property not found' }, 404);
+  return c.json(property);
 });
 
 app.get('/robots.txt', (c) => c.text('User-agent: *\nDisallow: /\n'));

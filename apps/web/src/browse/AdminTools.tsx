@@ -1,11 +1,171 @@
 import type { PropertyDetail } from '@repo/shared';
 import clsx from 'clsx';
 import { ImagePlus } from 'lucide-react';
-import { useEffect, useId, useMemo, useState } from 'react';
+import { useEffect, useId, useMemo, useState, type FormEvent, type ReactNode } from 'react';
+import { TagPicker } from '../components/TagPicker.tsx';
 import { Button, Notice, TextInput } from '../components/ui.tsx';
-import { useAdminPlatforms, useSetListing, useSetRemoved, useUploadPhoto } from '../lib/admin-api.ts';
+import { useAdminPlatforms, useRole, useSaveFields, useApprove, useUnapprove, useSetListing, useSetRemoved, useUploadPhoto } from '../lib/admin-api.ts';
+import { formatWhen } from '../lib/format.ts';
 
-// Admin-only blocks at the top of the panel: where the property is listed, its photo, and removing it.
+// Blocks at the top of the panel for signed-in people: onboarding (name, approval, Hostaway ID),
+// where the property is listed, its photo, and removing it. Contributors get these on onboarding
+// listings only, without approval, the Hostaway ID or removal.
+
+function Step({ n, done, children }: { n: number; done: boolean; children: ReactNode }) {
+  return (
+    <li className="grid grid-cols-[1.75rem_minmax(0,1fr)] gap-3 py-3">
+      <span
+        aria-hidden
+        className={clsx('caps grid size-6 place-items-center border text-[0.625rem]', done ? 'border-bronze bg-bronze text-paper' : 'border-hairline text-muted')}
+      >
+        {n}
+      </span>
+      <div className="min-w-0">{children}</div>
+    </li>
+  );
+}
+
+function RenameListing({ p }: { p: PropertyDetail }) {
+  const [name, setName] = useState(p.name);
+  const save = useSaveFields(p.id);
+  const id = useId();
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    save.mutate({ internalName: name.trim() });
+  };
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-2">
+      <label htmlFor={id} className="text-sm text-ink">
+        Listing name
+      </label>
+      <span className="flex flex-wrap gap-2">
+        <TextInput id={id} value={name} onChange={(e) => setName(e.target.value)} className="h-9 min-w-0 flex-1 text-sm sm:min-w-80" />
+        <Button type="submit" variant="secondary" busy={save.isPending} disabled={name.trim().length < 2 || name.trim() === p.name} className="min-h-9">
+          Rename
+        </Button>
+      </span>
+      <Notice>{save.error?.message}</Notice>
+    </form>
+  );
+}
+
+function EditTags({ p }: { p: PropertyDetail }) {
+  const [tags, setTags] = useState(p.tags);
+  const save = useSaveFields(p.id);
+  const dirty = tags.join('\n') !== p.tags.join('\n');
+  return (
+    <div className="mt-4 flex flex-col gap-2">
+      <span className="text-sm text-ink">Tags</span>
+      <TagPicker value={tags} onChange={setTags} />
+      <span className="flex items-center gap-3">
+        <Button variant="secondary" busy={save.isPending} disabled={!dirty} onClick={() => save.mutate({ tags })} className="min-h-9">
+          Save tags
+        </Button>
+        {dirty && (
+          <button type="button" onClick={() => setTags(p.tags)} className="caps text-[0.625rem] text-bronze underline hover:text-ink">
+            Undo changes
+          </button>
+        )}
+      </span>
+      <Notice>{save.error?.message}</Notice>
+    </div>
+  );
+}
+
+/** Type the Hostaway listing ID, then Approve: one step. Approving again with another ID changes it. */
+function ApproveForm({ p }: { p: PropertyDetail }) {
+  const pending = p.onboarding?.pendingHostawayId ?? null;
+  const [value, setValue] = useState(pending ? String(pending) : '');
+  const [problem, setProblem] = useState<string | null>(null);
+  const approve = useApprove(p.id);
+  const id = useId();
+  const submit = (e: FormEvent) => {
+    e.preventDefault();
+    const t = value.trim();
+    if (!/^\d+$/.test(t)) return setProblem('Enter the Hostaway listing ID, digits only.');
+    setProblem(null);
+    approve.mutate(Number(t));
+  };
+  const changing = pending !== null;
+  return (
+    <form onSubmit={submit} className="flex flex-col gap-2" noValidate>
+      <label htmlFor={id} className="text-sm text-ink">
+        Hostaway listing ID
+      </label>
+      <span className="flex items-center gap-2">
+        {/* TextInput fills its box, so the box sets the width and the button stays beside it. */}
+        <span className="w-44 shrink-0">
+          <TextInput
+            id={id}
+            inputMode="numeric"
+            autoComplete="off"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder="e.g. 603123"
+            className="tabular h-9 text-sm"
+          />
+        </span>
+        <Button type="submit" busy={approve.isPending} disabled={!value.trim() || value.trim() === String(pending ?? '')} className="min-h-9">
+          {changing ? 'Change ID' : 'Approve'}
+        </Button>
+      </span>
+      <Notice>{problem ?? approve.error?.message}</Notice>
+    </form>
+  );
+}
+
+/** The onboarding path, as two steps: fill in (everyone), then approve with the Hostaway ID (admins). */
+function OnboardingTools({ p }: { p: PropertyDetail }) {
+  const o = p.onboarding!;
+  const isAdmin = useRole() === 'admin';
+  const unapprove = useUnapprove(p.id);
+  return (
+    <>
+      <h4 className="caps mt-6 text-bronze">Onboarding</h4>
+      <ol className="divide-y divide-hairline/35">
+        <Step n={1} done>
+          <p className="mb-2 text-[0.8125rem] text-muted">
+            Created{o.createdBy ? ` by ${o.createdBy}` : ''}. Everyone signed in can see and edit it; the public can’t see it.
+          </p>
+          <RenameListing p={p} />
+          <EditTags key={p.tags.join('\n')} p={p} />
+        </Step>
+        <Step n={2} done={!!o.approvedAt && !!o.pendingHostawayId}>
+          {o.approvedAt && (
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
+              <p className="text-sm text-ink">
+                Approved by {o.approvedBy} · {formatWhen(o.approvedAt)}
+                {o.pendingHostawayId && <> · Hostaway listing {o.pendingHostawayId}</>}
+              </p>
+              {isAdmin && (
+                <Button variant="quiet" busy={unapprove.isPending} onClick={() => unapprove.mutate()}>
+                  Undo approval
+                </Button>
+              )}
+            </div>
+          )}
+          <Notice className="mb-2">{unapprove.error?.message}</Notice>
+          {isAdmin ? (
+            <>
+              <ApproveForm key={o.pendingHostawayId ?? 'none'} p={p} />
+              <p className="mt-1 text-[0.8125rem] text-muted">
+                {o.pendingHostawayId
+                  ? 'The next Sync Hostaway replaces this listing with the Hostaway one. Anything typed here that Hostaway doesn’t have carries over.'
+                  : 'Once the property is listed on Hostaway, type its listing ID and approve. The next Sync Hostaway then replaces this listing with it.'}
+              </p>
+            </>
+          ) : (
+            <p className="text-sm text-muted">
+              {o.pendingHostawayId
+                ? `Approved and linked to Hostaway listing ${o.pendingHostawayId}. The next Sync Hostaway replaces this listing with it.`
+                : 'Awaiting approval. The systems team approves it with its Hostaway listing ID once it’s listed there.'}
+            </p>
+          )}
+        </Step>
+      </ol>
+    </>
+  );
+}
 
 function PlatformRow({ p, platformKey, name, kind }: { p: PropertyDetail; platformKey: string; name: string; kind: 'hostaway' | 'manual' }) {
   const listedBadge = p.platforms.find((b) => b.key === platformKey);
@@ -94,7 +254,7 @@ function PhotoUpload({ p }: { p: PropertyDetail }) {
       <p className="text-sm text-ink-soft">
         Choose all of the property’s photos, then pick the one to show. Only that photo is kept; the rest set the photo count.
       </p>
-      <label htmlFor={id} className="caps flex w-fit cursor-pointer items-center gap-2 border border-gold px-4 py-2.5 text-ink hover:bg-gold-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-bronze">
+      <label htmlFor={id} className="caps flex w-fit cursor-pointer items-center gap-2 border border-hairline px-4 py-2.5 text-ink hover:bg-hover-wash has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-bronze">
         <ImagePlus aria-hidden className="size-4" strokeWidth={1.5} />
         {files.length ? 'Choose different photos' : p.photoSource === 'upload' ? 'Replace photos' : 'Choose photos'}
         <input
@@ -144,28 +304,37 @@ function PhotoUpload({ p }: { p: PropertyDetail }) {
 export function AdminTools({ p }: { p: PropertyDetail }) {
   const platforms = useAdminPlatforms();
   const setRemoved = useSetRemoved(p.id);
+  const isAdmin = useRole() === 'admin';
   const active = (platforms.data ?? []).filter((x) => !x.retired);
 
   return (
-    <section aria-labelledby="manage-h" className="border-b border-gold bg-ground/60 px-6 py-6 sm:px-8">
+    <section aria-labelledby="manage-h" className="border-b border-hairline bg-ground/60 px-6 py-6 sm:px-8">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h3 id="manage-h" className="font-display text-[1.6rem] leading-tight font-semibold text-ink">
           Manage
         </h3>
-        <span className="flex items-center gap-4">
-          {p.removed && <span className="caps text-danger">Removed from the repo</span>}
-          <Button variant={p.removed ? 'primary' : 'secondary'} busy={setRemoved.isPending} onClick={() => setRemoved.mutate(!p.removed)}>
-            {p.removed ? 'Restore property' : 'Remove from repo'}
-          </Button>
-        </span>
+        {isAdmin && (
+          <span className="flex items-center gap-4">
+            {p.removed && <span className="caps text-danger">Removed from the repo</span>}
+            <Button variant={p.removed ? 'primary' : 'secondary'} busy={setRemoved.isPending} onClick={() => setRemoved.mutate(!p.removed)}>
+              {p.removed ? 'Restore property' : 'Remove from repo'}
+            </Button>
+          </span>
+        )}
       </div>
       <Notice className="mt-2">{setRemoved.error?.message}</Notice>
-      {!p.removed && (
-        <p className="mt-1 text-[0.8125rem] text-muted">Removing only hides it here. Hostaway is never changed, and syncs won’t bring it back.</p>
+      {isAdmin && !p.removed && (
+        <p className="mt-1 text-[0.8125rem] text-muted">
+          {p.onboarding
+            ? 'Removing hides this onboarding listing from everyone. An admin can restore it.'
+            : 'Removing only hides it here. Hostaway is never changed, and syncs won’t bring it back.'}
+        </p>
       )}
 
+      {p.onboarding && <OnboardingTools key={`${p.name}-${p.onboarding.pendingHostawayId}`} p={p} />}
+
       <h4 className="caps mt-6 text-bronze">Listed on</h4>
-      <ul className="divide-y divide-gold/35">
+      <ul className="divide-y divide-hairline/35">
         {active.map((x) => (
           <PlatformRow key={`${x.key}-${p.platforms.map((b) => b.key + b.url).join()}`} p={p} platformKey={x.key} name={x.name} kind={x.kind} />
         ))}

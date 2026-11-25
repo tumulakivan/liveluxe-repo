@@ -8,7 +8,7 @@ import { PageHeading } from './AdminShell.tsx';
 /** One figure in the house style of liveluxe.au's "90 apartments hosted": serif numeral, tracked caption. */
 function Figure({ value, label, to, note }: { value: number | undefined; label: string; to: string; note?: string }) {
   return (
-    <li className="border-t border-gold">
+    <li className="border-t border-hairline">
       <Link to={to} className="group flex flex-col gap-2 py-5 pr-4 no-underline">
         <span className="font-display tabular text-[3.5rem] leading-none font-semibold text-ink transition-colors group-hover:text-bronze">
           {value ?? <span className="shimmer inline-block h-12 w-20 align-middle" />}
@@ -38,18 +38,23 @@ export function OverviewPage() {
         <Figure value={o?.active} label="Active" to="/admin/properties?active=1&archived=1" note="Carrying the “Active” tag" />
         <Figure value={o?.notListed} label="Not listed anywhere" to="/admin/properties?notListed=1" note="Not archived, on no platform" />
         <Figure value={o?.archived} label="Archived in Hostaway" to="/admin/properties?archivedOnly=1" note="Kept here, hidden from browsing" />
-        <Figure value={o?.addedByHand} label="Added by hand" to="/admin/properties?manual=1" note="Not in Hostaway yet" />
+        <Figure
+          value={o?.addedByHand}
+          label="Onboarding"
+          to="/admin/properties?stage=onboarding"
+          note={o ? `Not in Hostaway yet · ${o.awaitingApproval} awaiting approval` : 'Not in Hostaway yet'}
+        />
         <Figure value={o?.removed} label="Removed" to="/admin/properties?removed=only" note="Hidden from the repo" />
       </ul>
 
-      <section aria-labelledby="sync-h" className="mt-14 grid gap-6 border-t border-gold pt-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
+      <section aria-labelledby="sync-h" className="mt-14 grid gap-6 border-t border-hairline pt-8 md:grid-cols-[minmax(0,1fr)_auto] md:items-start">
         <div>
           <h2 id="sync-h" className="font-display text-[1.6rem] leading-tight font-semibold text-ink">
             Sync Hostaway
           </h2>
           <p className="mt-2 max-w-[60ch] text-[0.9375rem] leading-relaxed text-ink-soft">
-            Fetches every field Hostaway’s API returns and adds new listings. Fields filled by Claude or an admin are never touched, and removed
-            properties stay removed.
+            Fetches every field Hostaway’s API returns and adds new listings. Removed properties stay removed. Approved onboarding listings with a
+            Hostaway ID are replaced by that Hostaway listing, keeping what was typed where Hostaway has nothing.
           </p>
           <div className="mt-5 text-sm text-ink-soft" aria-live="polite">
             {sync.isPending ? (
@@ -68,6 +73,16 @@ export function OverviewPage() {
                     <span>{s.fieldsChanged} field values changed</span>
                   </p>
                 )}
+                {s?.replaced?.map((r) => (
+                  <p key={r.hostawayId} className="mt-1 text-ink">
+                    Replaced by Hostaway listing {r.hostawayId}: {r.name}
+                  </p>
+                ))}
+                {s?.notFound?.map((r) => (
+                  <Notice key={r.hostawayId} className="mt-1">
+                    Hostaway listing {r.hostawayId} (given to {r.name}) wasn’t found in Hostaway. Check the ID.
+                  </Notice>
+                ))}
                 {last.error && <Notice className="mt-1">The last sync failed: {last.error}</Notice>}
               </>
             ) : (
