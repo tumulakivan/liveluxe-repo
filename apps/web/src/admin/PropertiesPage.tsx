@@ -343,7 +343,10 @@ export function PropertiesPage() {
                       </td>
                       <td className="tabular py-3 pr-4 text-ink-soft">{p.hostawayId ?? <span className="text-muted">None yet</span>}</td>
                       <td className="py-3 pr-4">
-                        <PlatformBubbles platforms={p.platforms} />
+                        {/* Keep the logos on one line; the column takes their width. */}
+                        <div className="w-max">
+                          <PlatformBubbles platforms={p.platforms} />
+                        </div>
                       </td>
                       <td className="py-3 pr-4">
                         <span className="caps whitespace-nowrap text-muted">{statusBits(p).join(' · ') || '—'}</span>
