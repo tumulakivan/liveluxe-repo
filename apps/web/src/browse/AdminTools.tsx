@@ -7,8 +7,9 @@ import { Button, Notice, TextInput } from '../components/ui.tsx';
 import { useAdminPlatforms, useRole, useSaveFields, useApprove, useUnapprove, useSetListing, useSetRemoved, useUploadPhoto } from '../lib/admin-api.ts';
 import { formatWhen } from '../lib/format.ts';
 
-// Blocks at the top of the panel for signed-in people: onboarding (name, approval, Hostaway ID),
-// where the property is listed, its photo, and removing it. Contributors get these on onboarding
+// The sections at the bottom of the panel for signed-in people: Onboarding (name, tags, approval
+// with the Hostaway ID) and Platforms (where the property is listed). The display-photo
+// picker (PhotoUpload) lives in the Photos section, and RemoveButton in the panel header. Contributors get these on onboarding
 // listings only, without approval, the Hostaway ID or removal.
 
 function Step({ n, done, children }: { n: number; done: boolean; children: ReactNode }) {
@@ -120,9 +121,8 @@ function OnboardingTools({ p }: { p: PropertyDetail }) {
   const isAdmin = useRole() === 'admin';
   const unapprove = useUnapprove(p.id);
   return (
-    <>
-      <h4 className="caps mt-6 text-bronze">Onboarding</h4>
-      <ol className="divide-y divide-hairline/35">
+    <ManageSection id="onboarding" title="Onboarding">
+      <ol className="mt-2 divide-y divide-hairline/35">
         <Step n={1} done>
           <p className="mb-2 text-[0.8125rem] text-muted">
             Created{o.createdBy ? ` by ${o.createdBy}` : ''}. Everyone signed in can see and edit it; the public can’t see it.
@@ -163,7 +163,7 @@ function OnboardingTools({ p }: { p: PropertyDetail }) {
           )}
         </Step>
       </ol>
-    </>
+    </ManageSection>
   );
 }
 
@@ -230,7 +230,7 @@ async function resizeForUpload(file: File, maxEdge = 1600): Promise<Blob> {
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('Could not read that photo.'))), 'image/jpeg', 0.85));
 }
 
-function PhotoUpload({ p }: { p: PropertyDetail }) {
+export function PhotoUpload({ p }: { p: PropertyDetail }) {
   const [files, setFiles] = useState<File[]>([]);
   const [chosen, setChosen] = useState(0);
   const [problem, setProblem] = useState<string | null>(null);
@@ -301,51 +301,63 @@ function PhotoUpload({ p }: { p: PropertyDetail }) {
   );
 }
 
+/** Remove from repo / Restore, for admins: bottom right of the panel header. */
+export function RemoveButton({ p }: { p: PropertyDetail }) {
+  const setRemoved = useSetRemoved(p.id);
+  const note = p.onboarding
+    ? 'Removing hides this onboarding listing from everyone. An admin can restore it.'
+    : 'Removing only hides it here. Hostaway is never changed, and syncs won’t bring it back.';
+  return (
+    <div className="flex flex-col items-end gap-1">
+      <Button
+        variant={p.removed ? 'primary' : 'secondary'}
+        busy={setRemoved.isPending}
+        onClick={() => setRemoved.mutate(!p.removed)}
+        title={p.removed ? undefined : note}
+      >
+        {p.removed ? 'Restore property' : 'Remove from repo'}
+      </Button>
+      <Notice>{setRemoved.error?.message}</Notice>
+    </div>
+  );
+}
+
+/** A section at the bottom of the panel, styled and indexed like the field sections. */
+function ManageSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
+  return (
+    <section id={`sec-${id}`} data-section={id} aria-labelledby={`h-${id}`} className="scroll-mt-6 pt-8">
+      <h3 id={`h-${id}`} className="font-display border-b border-hairline pb-2 text-[1.6rem] leading-tight font-semibold text-ink">
+        {title}
+      </h3>
+      {children}
+    </section>
+  );
+}
+
+/** The sections below the fields, in the panel's index: Onboarding (onboarding listings only), then Platforms. */
+export function manageSections(p: PropertyDetail): { key: string; label: string }[] {
+  return [...(p.onboarding ? [{ key: 'onboarding', label: 'Onboarding' }] : []), { key: 'platforms', label: 'Platforms' }];
+}
+
 export function AdminTools({ p }: { p: PropertyDetail }) {
   const platforms = useAdminPlatforms();
-  const setRemoved = useSetRemoved(p.id);
-  const isAdmin = useRole() === 'admin';
   const active = (platforms.data ?? []).filter((x) => !x.retired);
 
   return (
-    <section aria-labelledby="manage-h" className="border-b border-hairline bg-ground/60 px-6 py-6 sm:px-8">
-      <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h3 id="manage-h" className="font-display text-[1.6rem] leading-tight font-semibold text-ink">
-          Manage
-        </h3>
-        {isAdmin && (
-          <span className="flex items-center gap-4">
-            {p.removed && <span className="caps text-danger">Removed from the repo</span>}
-            <Button variant={p.removed ? 'primary' : 'secondary'} busy={setRemoved.isPending} onClick={() => setRemoved.mutate(!p.removed)}>
-              {p.removed ? 'Restore property' : 'Remove from repo'}
-            </Button>
-          </span>
-        )}
-      </div>
-      <Notice className="mt-2">{setRemoved.error?.message}</Notice>
-      {isAdmin && !p.removed && (
-        <p className="mt-1 text-[0.8125rem] text-muted">
-          {p.onboarding
-            ? 'Removing hides this onboarding listing from everyone. An admin can restore it.'
-            : 'Removing only hides it here. Hostaway is never changed, and syncs won’t bring it back.'}
-        </p>
-      )}
-
+    <>
       {p.onboarding && <OnboardingTools key={`${p.name}-${p.onboarding.pendingHostawayId}`} p={p} />}
-
-      <h4 className="caps mt-6 text-bronze">Listed on</h4>
-      <ul className="divide-y divide-hairline/35">
-        {active.map((x) => (
-          <PlatformRow key={`${x.key}-${p.platforms.map((b) => b.key + b.url).join()}`} p={p} platformKey={x.key} name={x.name} kind={x.kind} />
-        ))}
-      </ul>
-
-      {p.hostawayId === null && (
-        <>
-          <h4 className="caps mt-6 mb-2 text-bronze">Photo</h4>
-          <PhotoUpload p={p} />
-        </>
-      )}
-    </section>
+      <ManageSection id="platforms" title="Platforms">
+        <p className="mt-3 text-[0.8125rem] text-muted">
+          {p.hostawayId === null
+            ? 'Where the property is listed so far. Tick each platform, with its link if you have it.'
+            : 'Where the property is listed. Airbnb, Booking.com and Vrbo update with each Sync Hostaway; tick the others here.'}
+        </p>
+        <ul className="divide-y divide-hairline/35">
+          {active.map((x) => (
+            <PlatformRow key={`${x.key}-${p.platforms.map((b) => b.key + b.url).join()}`} p={p} platformKey={x.key} name={x.name} kind={x.kind} />
+          ))}
+        </ul>
+      </ManageSection>
+    </>
   );
 }

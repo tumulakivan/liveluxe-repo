@@ -1,4 +1,5 @@
 import clsx from 'clsx';
+import { PlatformMark } from '../components/PlatformBubbles.tsx';
 import { useId, useState, type FormEvent } from 'react';
 import { Button, Notice, TextInput } from '../components/ui.tsx';
 import { useAddPlatform, useAdminPlatforms, useRetirePlatform } from '../lib/admin-api.ts';
@@ -31,9 +32,7 @@ export function PlatformsPage() {
       <ul className="border-t border-hairline md:hidden">
         {(platforms.data ?? []).map((p) => (
           <li key={p.key} className={clsx('flex items-center gap-4 border-b border-hairline/45 py-4', p.retired && 'text-muted')}>
-            <span className="inline-grid size-7 shrink-0 place-items-center rounded-full border border-hairline bg-paper text-[0.625rem] font-medium text-ink-soft">
-              {p.initials}
-            </span>
+            <PlatformMark p={p} />
             <span className="min-w-0 flex-1">
               <span className="font-display block text-[1.1rem] font-semibold text-ink">
                 {p.name}
@@ -74,9 +73,7 @@ export function PlatformsPage() {
                   {p.retired && <span className="caps ml-3 text-muted">Retired</span>}
                 </td>
                 <td className="py-3 pr-4">
-                  <span className="inline-grid size-7 place-items-center rounded-full border border-hairline bg-paper text-[0.625rem] font-medium text-ink-soft">
-                    {p.initials}
-                  </span>
+                  <PlatformMark p={p} />
                 </td>
                 <td className="py-3 pr-4 text-ink-soft">{p.kind === 'hostaway' ? 'Sync Hostaway' : 'Ticked by an admin'}</td>
                 <td className="tabular py-3 pr-4 text-right text-ink-soft">{p.listedCount}</td>

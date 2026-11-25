@@ -51,6 +51,18 @@ const KNOWN_INITIALS: Record<string, string> = {
   silverdoor: 'SD',
 };
 
+// Logos for the main platforms, served by the web app from apps/web/public/platform-icons/
+// (originals in assets/platform-icons/). A platform's own icon column, when set, wins.
+const BUILT_IN_ICONS: Record<string, string> = {
+  airbnb: '/platform-icons/airbnb.svg',
+  bookingcom: '/platform-icons/bookingcom.jpg',
+  vrbo: '/platform-icons/vrbo.png',
+};
+
+export function iconFor(key: string, icon: string | null = null): string | null {
+  return icon ?? BUILT_IN_ICONS[key] ?? null;
+}
+
 function deriveInitials(name: string): string {
   const words = name.replace(/\.[a-z]+$/i, '').split(/[\s.-]+/).filter(Boolean);
   return (words.length > 1 ? words.map((w) => w[0]).join('') : name.slice(0, 2)).toUpperCase().slice(0, 3);
@@ -84,7 +96,7 @@ function listedPlatforms(platforms: PlatformRow[]): Map<number, PlatformBadge[]>
     const p = byId.get(r.platform_id);
     if (!p) continue;
     const list = out.get(r.property_id) ?? [];
-    list.push({ key: p.key, name: p.name, initials: initials.get(p.key)!, icon: p.icon, url: r.url });
+    list.push({ key: p.key, name: p.name, initials: initials.get(p.key)!, icon: iconFor(p.key, p.icon), url: r.url });
     out.set(r.property_id, list);
   }
   const order = new Map(platforms.map((p, i) => [p.key, i]));

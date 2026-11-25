@@ -43,7 +43,7 @@ export interface PlatformBadge {
   key: string;
   name: string;
   initials: string;
-  /** Path to the icon under /platform-icons, once mapped. */
+  /** Logo path under /platform-icons, or null to show the initials. */
   icon: string | null;
   url: string | null;
 }
@@ -170,6 +170,8 @@ export interface AdminPlatform {
   name: string;
   kind: 'hostaway' | 'manual';
   initials: string;
+  /** Logo path, or null to show the initials. */
+  icon: string | null;
   retired: boolean;
   listedCount: number;
 }

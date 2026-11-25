@@ -15,7 +15,7 @@ import { Tags } from '../components/Tags.tsx';
 import { Link } from 'react-router';
 import { useAdminProperty, useMe } from '../lib/admin-api.ts';
 import { useProperty } from '../lib/api.ts';
-import { AdminTools } from './AdminTools.tsx';
+import { AdminTools, PhotoUpload, RemoveButton, manageSections } from './AdminTools.tsx';
 import { FieldEditor } from './FieldEditor.tsx';
 import { copyText } from '../lib/clipboard.ts';
 import { formatValue, formatWhen } from '../lib/format.ts';
@@ -256,6 +256,13 @@ function SectionBlock({ section, p, admin }: { section: Section; p: PropertyDeta
           </div>
         ))
       )}
+      {/* Onboarding listings have no Hostaway photos, so the display photo is chosen here. */}
+      {section.key === 'photos' && admin && p.hostawayId === null && (
+        <div>
+          <h4 className="caps pt-5 pb-2 text-[0.625rem] text-bronze">Display photo</h4>
+          <PhotoUpload p={p} />
+        </div>
+      )}
     </section>
   );
 }
@@ -295,7 +302,9 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
   const admin = signedIn && (me.data?.role === 'admin' || p.hostawayId === null);
   const sections = useMemo(() => buildSections(p), [p]);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
-  const keys = useMemo(() => sections.map((s) => s.key), [sections]);
+  // The index lists the field sections, then Onboarding and Platforms (at the bottom) for those who can manage.
+  const nav = useMemo(() => [...sections.map((s) => ({ key: s.key as string, label: s.label })), ...(admin ? manageSections(p) : [])], [sections, admin, p]);
+  const keys = useMemo(() => nav.map((s) => s.key), [nav]);
   const active = useActiveSection(scroller, keys);
   const photo = p.photoUrl;
   // Remember which photo failed, so a newly uploaded one gets its own chance to load.
@@ -327,6 +336,7 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
             <span>· {p.photoCount ?? 0} photos</span>
             {p.lastSyncedAt && <span className="text-muted">· Synced {formatWhen(p.lastSyncedAt)}</span>}
             {p.archived && <span className="text-muted">· Archived in Hostaway</span>}
+            {p.removed && <span className="text-danger">· Removed from the repo</span>}
           </Dialog.Description>
           <PlatformBubbles platforms={p.platforms} size="md" />
           <Tags tags={p.tags} />
@@ -335,14 +345,18 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
               Edit in dashboard
             </Link>
           )}
+          {signedIn && me.data?.role === 'admin' && (
+            <div className="-mr-8 mt-auto self-end">
+              <RemoveButton p={p} />
+            </div>
+          )}
         </div>
       </header>
-      {admin && <AdminTools p={p} />}
 
       <div className="grid grid-cols-[minmax(0,1fr)] sm:grid-cols-[11rem_minmax(0,1fr)]">
         <nav aria-label="Sections" className="sticky top-0 z-10 border-b border-hairline bg-paper/95 backdrop-blur-sm sm:h-fit sm:border-b-0 sm:bg-transparent sm:backdrop-blur-none">
           <ul className="flex gap-x-5 overflow-x-auto px-6 py-3 pr-12 [scrollbar-width:none] [mask-image:linear-gradient(to_right,black_82%,transparent)] sm:[mask-image:none] sm:flex-col sm:gap-0.5 sm:px-0 sm:py-8 sm:pr-0 sm:pl-8">
-            {sections.map((s) => (
+            {nav.map((s) => (
               <li key={s.key}>
                 <button
                   type="button"
@@ -363,6 +377,7 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
           {sections.map((s) => (
             <SectionBlock key={s.key} section={s} p={p} admin={admin} />
           ))}
+          {admin && <AdminTools p={p} />}
           <p className="mt-12 border-t border-hairline pt-4 text-xs text-muted">
             {p.lastSyncedAt ? `Hostaway values last synced ${formatWhen(p.lastSyncedAt)}.` : 'Never synced from Hostaway.'} The house manual
             parts are cut out of Hostaway’s house manual. Values set by an admin, or taken from Airbnb’s settings, say so beneath them.

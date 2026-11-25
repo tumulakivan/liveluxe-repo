@@ -27,7 +27,7 @@ import { hashPassword } from './passwords.ts';
 import { createToken, listTokens, revokeToken } from './fill.ts';
 import { toPdf } from './pdf.ts';
 import { buildReport, toCsv } from './reports.ts';
-import { facets, getProperty, hasActiveTag, initialsFor, listProperties, loadSummaries } from './properties.ts';
+import { facets, getProperty, hasActiveTag, iconFor, initialsFor, listProperties, loadSummaries } from './properties.ts';
 import { syncHostaway } from './sync.ts';
 
 // The dashboard API. Everyone signed in (admins and contributors) can read every property and
@@ -459,6 +459,7 @@ function adminPlatforms(): AdminPlatform[] {
     name: r.name,
     kind: r.kind,
     initials: initials.get(r.key)!,
+    icon: iconFor(r.key),
     retired: r.retired === 1,
     listedCount: counts.get(r.id) ?? 0,
   }));

@@ -4,18 +4,26 @@ import clsx from 'clsx';
 
 // Listing status: one round seal per platform the property is listed on.
 
-function Bubble({ p, size }: { p: PlatformBadge; size: 'sm' | 'md' }) {
-  const label = p.url ? `Open on ${p.name}` : `Listed on ${p.name}`;
-  const face = (
+/** The round seal on its own: the platform's logo, or its initials when it has none. */
+export function PlatformMark({
+  p,
+  size = 'sm',
+  interactive = false,
+}: {
+  p: Pick<PlatformBadge, 'initials' | 'icon'>;
+  size?: 'sm' | 'md';
+  interactive?: boolean;
+}) {
+  return (
     <span
       className={clsx(
-        'relative z-10 inline-grid shrink-0 place-items-center rounded-full border border-hairline bg-paper text-ink-soft transition-colors',
+        'relative z-10 inline-grid shrink-0 place-items-center overflow-hidden rounded-full border border-hairline bg-paper text-ink-soft transition-colors',
         size === 'sm' ? 'size-7 text-[0.625rem]' : 'size-9 text-[0.6875rem]',
-        p.url && 'hover:border-bronze hover:bg-ink hover:text-paper',
+        interactive && (p.icon ? 'hover:border-bronze hover:ring-2 hover:ring-bronze/40' : 'hover:border-bronze hover:bg-ink hover:text-paper'),
       )}
     >
       {p.icon ? (
-        <img src={p.icon} alt="" className="size-full rounded-full object-cover" />
+        <img src={p.icon} alt="" className="size-full object-cover" />
       ) : (
         <span className={clsx('font-medium', p.initials.length > 2 ? 'text-[0.625rem] tracking-[0.02em]' : 'tracking-[0.08em]')} aria-hidden>
           {p.initials}
@@ -23,6 +31,11 @@ function Bubble({ p, size }: { p: PlatformBadge; size: 'sm' | 'md' }) {
       )}
     </span>
   );
+}
+
+function Bubble({ p, size }: { p: PlatformBadge; size: 'sm' | 'md' }) {
+  const label = p.url ? `Open on ${p.name}` : `Listed on ${p.name}`;
+  const face = <PlatformMark p={p} size={size} interactive={!!p.url} />;
   return (
     <Tooltip.Root>
       <Tooltip.Trigger asChild>
