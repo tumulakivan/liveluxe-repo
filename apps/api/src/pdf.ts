@@ -5,7 +5,7 @@ import PDFDocument from 'pdfkit';
 import { ROOT } from './config.ts';
 import type { Report } from './reports.ts';
 
-// The report as an A4 landscape PDF in the house style: limestone-quiet, gold hairlines,
+// The report as an A4 landscape PDF in the house style: quiet cool greys, silver hairlines,
 // Cormorant for the title, Jost for everything else, the Live Luxe monogram top left.
 
 const FONT_DIR = resolve(ROOT, 'apps/api/node_modules/@fontsource');
@@ -20,9 +20,9 @@ const MARK_VIEWBOX_HEIGHT = 1018.2;
 const C = {
   ink: '#0a0a0c',
   inkSoft: '#2e2d31',
-  muted: '#5e574e',
+  muted: '#555a62',
   bronze: '#7c5e26',
-  gold: '#d3ac60',
+  hairline: '#a8afba', // the screen's hairline, solid on white paper
 };
 
 const PAGE = { margin: 36, header: 9, cell: 8.5, padX: 6, padY: 5 };
@@ -70,7 +70,7 @@ export function toPdf(report: Report, generatedBy: string): Promise<Buffer> {
     .moveTo(left, PAGE.margin + 32)
     .lineTo(left + width, PAGE.margin + 32)
     .lineWidth(0.6)
-    .strokeColor(C.gold)
+    .strokeColor(C.hairline)
     .stroke();
 
   doc.font('display').fontSize(26).fillColor(C.ink).text('Property report', left, PAGE.margin + 46);
@@ -104,7 +104,7 @@ export function toPdf(report: Report, generatedBy: string): Promise<Buffer> {
       x += widths[i]!;
     });
     const end = y + h + PAGE.padY * 2;
-    doc.moveTo(left, end).lineTo(left + width, end).lineWidth(0.8).strokeColor(C.gold).stroke();
+    doc.moveTo(left, end).lineTo(left + width, end).lineWidth(0.8).strokeColor(C.hairline).stroke();
     doc.y = end;
   };
 
@@ -143,7 +143,7 @@ export function toPdf(report: Report, generatedBy: string): Promise<Buffer> {
       .moveTo(left, y + h)
       .lineTo(left + width, y + h)
       .lineWidth(0.4)
-      .strokeColor(C.gold)
+      .strokeColor(C.hairline)
       .strokeOpacity(0.55)
       .stroke()
       .strokeOpacity(1);

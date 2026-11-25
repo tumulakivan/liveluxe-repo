@@ -28,10 +28,10 @@ export function PlatformsPage() {
       {platforms.isError && <Notice>{platforms.error.message}</Notice>}
 
       {/* Phones: stacked rows. */}
-      <ul className="border-t border-gold md:hidden">
+      <ul className="border-t border-hairline md:hidden">
         {(platforms.data ?? []).map((p) => (
-          <li key={p.key} className={clsx('flex items-center gap-4 border-b border-gold/45 py-4', p.retired && 'text-muted')}>
-            <span className="inline-grid size-7 shrink-0 place-items-center rounded-full border border-gold bg-paper text-[0.625rem] font-medium text-ink-soft">
+          <li key={p.key} className={clsx('flex items-center gap-4 border-b border-hairline/45 py-4', p.retired && 'text-muted')}>
+            <span className="inline-grid size-7 shrink-0 place-items-center rounded-full border border-hairline bg-paper text-[0.625rem] font-medium text-ink-soft">
               {p.initials}
             </span>
             <span className="min-w-0 flex-1">
@@ -53,7 +53,7 @@ export function PlatformsPage() {
         ))}
       </ul>
 
-      <div className="relative hidden overflow-x-auto border-t border-gold md:block">
+      <div className="relative hidden overflow-x-auto border-t border-hairline md:block">
         <table className="w-full min-w-[40rem] border-collapse text-left text-sm">
           <thead>
             <tr className="caps text-bronze">
@@ -68,13 +68,13 @@ export function PlatformsPage() {
           </thead>
           <tbody>
             {(platforms.data ?? []).map((p) => (
-              <tr key={p.key} className={clsx('border-t border-gold/45', p.retired && 'text-muted')}>
+              <tr key={p.key} className={clsx('border-t border-hairline/45', p.retired && 'text-muted')}>
                 <td className="py-3 pr-4">
                   <span className="font-display text-[1.1rem] font-semibold text-ink">{p.name}</span>
                   {p.retired && <span className="caps ml-3 text-muted">Retired</span>}
                 </td>
                 <td className="py-3 pr-4">
-                  <span className="inline-grid size-7 place-items-center rounded-full border border-gold bg-paper text-[0.625rem] font-medium text-ink-soft">
+                  <span className="inline-grid size-7 place-items-center rounded-full border border-hairline bg-paper text-[0.625rem] font-medium text-ink-soft">
                     {p.initials}
                   </span>
                 </td>
@@ -96,7 +96,7 @@ export function PlatformsPage() {
       </div>
       <Notice className="mt-3">{retire.error?.message}</Notice>
 
-      <form onSubmit={submit} className="mt-12 flex max-w-xl flex-col gap-3 border-t border-gold pt-8">
+      <form onSubmit={submit} className="mt-12 flex max-w-xl flex-col gap-3 border-t border-hairline pt-8">
         <h2 className="font-display text-[1.6rem] leading-tight font-semibold text-ink">Add a platform</h2>
         <p className="text-[0.9375rem] text-ink-soft">New platforms are manual. Tick them per property in the property panel.</p>
         <label htmlFor={id} className="caps mt-2 text-bronze">

@@ -57,10 +57,10 @@ export function ChecklistPopover({
           sideOffset={6}
           aria-label={label}
           collisionPadding={12}
-          className={clsx('z-40 max-w-[calc(100vw-24px)] border border-gold bg-paper shadow-[0_12px_32px_-12px_rgb(10_10_12/0.25)]', width)}
+          className={clsx('z-40 max-w-[calc(100vw-24px)] border border-hairline bg-paper shadow-[0_12px_32px_-12px_rgb(10_10_12/0.25)]', width)}
         >
           {searchable && (
-            <label className="flex items-center gap-2 border-b border-gold/60 px-3">
+            <label className="flex items-center gap-2 border-b border-hairline/60 px-3">
               <Search aria-hidden className="size-4 text-muted" strokeWidth={1.5} />
               <span className="sr-only">{find}</span>
               <input
@@ -81,7 +81,7 @@ export function ChecklistPopover({
                     type="button"
                     aria-pressed={on}
                     onClick={() => onChange(toggle(selected, o.value))}
-                    className="flex min-h-10 w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-soft hover:bg-gold-wash focus-visible:bg-gold-wash"
+                    className="flex min-h-10 w-full items-center gap-2.5 px-3 py-2 text-left text-sm text-ink-soft hover:bg-hover-wash focus-visible:bg-hover-wash"
                   >
                     <span className={clsx('grid size-4 shrink-0 place-items-center border', on ? 'border-bronze bg-bronze text-paper' : 'border-muted')}>
                       {on && <Check aria-hidden className="size-3" strokeWidth={2.5} />}
@@ -97,7 +97,7 @@ export function ChecklistPopover({
             )}
           </ul>
           {showAll && selected.length > 0 && (
-            <div className="border-t border-gold/60 px-3 py-2">
+            <div className="border-t border-hairline/60 px-3 py-2">
               <button type="button" onClick={() => onChange([])} className="caps text-[0.625rem] text-bronze underline hover:text-ink">
                 Show all
               </button>
@@ -154,7 +154,7 @@ export function MultiPicker({
             type="button"
             className={clsx(
               'caps flex items-center gap-1.5 border-b py-1.5 transition-colors',
-              selected.length ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-gold hover:text-ink',
+              selected.length ? 'border-bronze text-ink' : 'border-transparent text-muted hover:border-hairline hover:text-ink',
             )}
           >
             {selected.length ? `${placeholder} (${selected.length})` : placeholder}

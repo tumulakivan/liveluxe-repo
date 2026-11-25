@@ -33,7 +33,7 @@ export function Pagination({
   const to = Math.min(total, page * pageSize);
   const step = 'grid h-9 min-w-9 place-items-center px-2 text-sm transition-colors';
   return (
-    <div className="flex flex-col items-start justify-between gap-4 border-t border-gold pt-5 sm:flex-row sm:items-center">
+    <div className="flex flex-col items-start justify-between gap-4 border-t border-hairline pt-5 sm:flex-row sm:items-center">
       <p className="tabular text-sm text-muted" aria-live="polite">
         Showing <span className="text-ink">{from}–{to}</span> of <span className="text-ink">{total}</span>
       </p>
@@ -44,7 +44,7 @@ export function Pagination({
             <select
               value={pageSize}
               onChange={(e) => onPageSize(Number(e.target.value))}
-              className="tabular h-9 appearance-none border border-edge bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-gold-wash"
+              className="tabular h-9 appearance-none border border-edge bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-hover-wash"
             >
               {PAGE_SIZES.map((s) => (
                 <option key={s} value={s}>
@@ -64,7 +64,7 @@ export function Pagination({
                   onClick={() => onPage(page - 1)}
                   disabled={page <= 1}
                   aria-label="Previous page"
-                  className={clsx(step, 'text-ink hover:bg-gold-wash disabled:cursor-not-allowed disabled:text-muted/50 disabled:hover:bg-transparent')}
+                  className={clsx(step, 'text-ink hover:bg-hover-wash disabled:cursor-not-allowed disabled:text-muted/50 disabled:hover:bg-transparent')}
                 >
                   <ChevronLeft aria-hidden className="size-4" strokeWidth={1.5} />
                 </button>
@@ -81,7 +81,7 @@ export function Pagination({
                       onClick={() => onPage(n)}
                       aria-current={n === page ? 'page' : undefined}
                       aria-label={`Page ${n}`}
-                      className={clsx(step, n === page ? 'bg-ink text-paper' : 'text-ink hover:bg-gold-wash')}
+                      className={clsx(step, n === page ? 'bg-ink text-paper' : 'text-ink hover:bg-hover-wash')}
                     >
                       {n}
                     </button>
@@ -94,7 +94,7 @@ export function Pagination({
                   onClick={() => onPage(page + 1)}
                   disabled={page >= pageCount}
                   aria-label="Next page"
-                  className={clsx(step, 'text-ink hover:bg-gold-wash disabled:cursor-not-allowed disabled:text-muted/50 disabled:hover:bg-transparent')}
+                  className={clsx(step, 'text-ink hover:bg-hover-wash disabled:cursor-not-allowed disabled:text-muted/50 disabled:hover:bg-transparent')}
                 >
                   <ChevronRight aria-hidden className="size-4" strokeWidth={1.5} />
                 </button>

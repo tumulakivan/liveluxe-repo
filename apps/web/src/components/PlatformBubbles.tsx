@@ -9,7 +9,7 @@ function Bubble({ p, size }: { p: PlatformBadge; size: 'sm' | 'md' }) {
   const face = (
     <span
       className={clsx(
-        'relative z-10 inline-grid shrink-0 place-items-center rounded-full border border-gold bg-paper text-ink-soft transition-colors',
+        'relative z-10 inline-grid shrink-0 place-items-center rounded-full border border-hairline bg-paper text-ink-soft transition-colors',
         size === 'sm' ? 'size-7 text-[0.625rem]' : 'size-9 text-[0.6875rem]',
         p.url && 'hover:border-bronze hover:bg-ink hover:text-paper',
       )}

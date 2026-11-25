@@ -62,7 +62,7 @@ export function FieldEditor({ propertyId, def, value, onDone }: { propertyId: nu
 
   const field =
     def.type === 'boolean' ? (
-      <div role="group" aria-labelledby={`${id}-l`} className="flex w-fit border border-gold">
+      <div role="group" aria-labelledby={`${id}-l`} className="flex w-fit border border-hairline">
         {[
           ['yes', 'Yes'],
           ['no', 'No'],
@@ -73,7 +73,7 @@ export function FieldEditor({ propertyId, def, value, onDone }: { propertyId: nu
             type="button"
             aria-pressed={draft === v}
             onClick={() => setDraft(v!)}
-            className={clsx('caps h-9 px-3', draft === v ? 'bg-ink text-paper' : 'text-muted hover:bg-gold-wash hover:text-ink')}
+            className={clsx('caps h-9 px-3', draft === v ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink')}
           >
             {label}
           </button>

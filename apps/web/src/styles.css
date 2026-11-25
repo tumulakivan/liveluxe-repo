@@ -9,7 +9,7 @@
   --font-display: 'Cormorant Garamond', 'Times New Roman', serif;
   --font-sans: 'Jost', 'Helvetica Neue', Arial, sans-serif;
 
-  /* Palette from liveluxe.au */
+  /* liveluxe.au's bronze and ink on cool greys (client's choice, 2026-11-18). See DESIGN.md. */
   --color-ground: #eef0f2; /* cool grey page */
   --color-paper: #f8f9fa; /* raised surfaces: panel, inputs */
   --color-stone: #e1e4e8; /* image wells, skeletons */
@@ -18,8 +18,8 @@
   --color-muted: #555a62;
   --color-bronze: #7c5e26;
   --color-bronze-deep: #5f4719;
-  --color-gold: rgb(168 175 186 / 0.75); /* hairlines only (cool grey) */
-  --color-gold-wash: rgb(140 152 168 / 0.14);
+  --color-hairline: rgb(168 175 186 / 0.75); /* hairlines only (cool grey) */
+  --color-hover-wash: rgb(140 152 168 / 0.14);
   --color-edge: #7f8690; /* control borders: 3.2:1 on ground, so inputs and selects read as controls */
   --color-danger: #8a2c1f;
 

@@ -46,7 +46,7 @@ function FilterDropdown({
           type="button"
           aria-label={`${label}: ${summary}`}
           className={clsx(
-            'flex h-12 min-w-0 items-center gap-2 border bg-paper pr-2 pl-2.5 text-left transition-colors duration-200 hover:bg-gold-wash data-[state=open]:border-bronze sm:h-10 sm:min-w-44 sm:pr-2.5 sm:pl-3',
+            'flex h-12 min-w-0 items-center gap-2 border bg-paper pr-2 pl-2.5 text-left transition-colors duration-200 hover:bg-hover-wash data-[state=open]:border-bronze sm:h-10 sm:min-w-44 sm:pr-2.5 sm:pl-3',
             active ? 'border-bronze' : 'border-edge',
           )}
         >
@@ -81,7 +81,7 @@ export function ViewSwitch({ view, onChange }: { view: ViewMode; onChange: (v: V
             onClick={() => onChange(value)}
             className={clsx(
               'caps flex h-9 items-center gap-2 px-3 text-[0.625rem] transition-colors duration-200',
-              on ? 'bg-ink text-paper' : 'text-muted hover:bg-gold-wash hover:text-ink',
+              on ? 'bg-ink text-paper' : 'text-muted hover:bg-hover-wash hover:text-ink',
             )}
           >
             <Icon aria-hidden className="size-3.5" strokeWidth={1.75} />
@@ -101,7 +101,7 @@ export function SortSelect({ sort, onChange }: { sort: SortMode; onChange: (s: S
         <select
           value={sort}
           onChange={(e) => onChange(e.target.value as SortMode)}
-          className="h-9 appearance-none border border-edge bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-gold-wash"
+          className="h-9 appearance-none border border-edge bg-transparent pr-8 pl-3 text-sm text-ink hover:bg-hover-wash"
         >
           <option value="name">Name A–Z</option>
           <option value="recent">Recently updated</option>
