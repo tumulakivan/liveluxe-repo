@@ -15,7 +15,7 @@ import { Tags } from '../components/Tags.tsx';
 import { Link } from 'react-router';
 import { useAdminProperty, useMe } from '../lib/admin-api.ts';
 import { useProperty } from '../lib/api.ts';
-import { AdminTools, PhotoUpload, RemoveButton, manageSections } from './AdminTools.tsx';
+import { AdminTools, OnboardingTools, PhotoUpload, RemoveButton } from './AdminTools.tsx';
 import { FieldEditor } from './FieldEditor.tsx';
 import { copyText } from '../lib/clipboard.ts';
 import { formatValue, formatWhen } from '../lib/format.ts';
@@ -302,8 +302,15 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
   const admin = signedIn && (me.data?.role === 'admin' || p.hostawayId === null);
   const sections = useMemo(() => buildSections(p), [p]);
   const [scroller, setScroller] = useState<HTMLDivElement | null>(null);
-  // The index lists the field sections, then Onboarding and Platforms (at the bottom) for those who can manage.
-  const nav = useMemo(() => [...sections.map((s) => ({ key: s.key as string, label: s.label })), ...(admin ? manageSections(p) : [])], [sections, admin, p]);
+  // For those who can manage: Onboarding first (onboarding listings only), the field sections, then Platforms last.
+  const nav = useMemo(
+    () => [
+      ...(admin && p.onboarding ? [{ key: 'onboarding', label: 'Onboarding' }] : []),
+      ...sections.map((s) => ({ key: s.key as string, label: s.label })),
+      ...(admin ? [{ key: 'platforms', label: 'Platforms' }] : []),
+    ],
+    [sections, admin, p.onboarding],
+  );
   const keys = useMemo(() => nav.map((s) => s.key), [nav]);
   const active = useActiveSection(scroller, keys);
   const photo = p.photoUrl;
@@ -374,6 +381,7 @@ function Dossier({ p, admin: signedIn }: { p: PropertyDetail; admin: boolean }) 
           </ul>
         </nav>
         <div className="min-w-0 px-6 pb-16 sm:pr-8 sm:pl-6">
+          {admin && p.onboarding && <OnboardingTools key={`${p.name}-${p.onboarding.pendingHostawayId}`} p={p} />}
           {sections.map((s) => (
             <SectionBlock key={s.key} section={s} p={p} admin={admin} />
           ))}

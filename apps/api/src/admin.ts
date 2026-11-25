@@ -263,6 +263,8 @@ function onboardingRow(raw: string) {
 
 const approveBody = z.object({
   hostawayId: z.number({ message: 'Enter the Hostaway listing ID, digits only.' }).int().positive().max(2_147_483_647),
+  /** Set after the admin has seen that the ID belongs to a listing already here, and confirmed the merge. */
+  confirmExisting: z.boolean().optional(),
 });
 
 /**
@@ -280,6 +282,20 @@ admin.post('/properties/:id/approve', async (c) => {
     | { name: string }
     | undefined;
   if (other) return c.json(bad(`Hostaway listing ${hostawayId} is already given to “${other.name}”.`), 409);
+  // The ID may already be an existing listing here: a typo pointing at another property, or the right
+  // listing synced in before approval (the next sync then merges this one into it). Ask before allowing it.
+  const existing = db.prepare('SELECT name, hidden FROM properties WHERE hostaway_id = ?').get(hostawayId) as
+    | { name: string; hidden: number }
+    | undefined;
+  if (existing && !parsed.data.confirmExisting) {
+    return c.json(
+      {
+        error: `Hostaway listing ${hostawayId} is already here as “${existing.name}”${existing.hidden ? ' (removed from the repo)' : ''}. If that’s this property, approve and merge: the next Sync Hostaway adds the details typed here to it. If not, check the ID.`,
+        code: 'existing-listing',
+      },
+      409,
+    );
+  }
   db.prepare(
     `UPDATE properties SET pending_hostaway_id = ?, approved_at = COALESCE(approved_at, ?), approved_by = COALESCE(approved_by, ?),
        updated_at = ? WHERE id = ?`,

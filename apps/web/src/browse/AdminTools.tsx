@@ -6,9 +6,10 @@ import { TagPicker } from '../components/TagPicker.tsx';
 import { Button, Notice, TextInput } from '../components/ui.tsx';
 import { useAdminPlatforms, useRole, useSaveFields, useApprove, useUnapprove, useSetListing, useSetRemoved, useUploadPhoto } from '../lib/admin-api.ts';
 import { formatWhen } from '../lib/format.ts';
+import { ApiError } from '../lib/http.ts';
 
-// The sections at the bottom of the panel for signed-in people: Onboarding (name, tags, approval
-// with the Hostaway ID) and Platforms (where the property is listed). The display-photo
+// Sections for signed-in people: Onboarding (name, tags, approval with the Hostaway ID; first in the
+// panel, onboarding listings only) and Platforms (where the property is listed; last in the panel). The display-photo
 // picker (PhotoUpload) lives in the Photos section, and RemoveButton in the panel header. Contributors get these on onboarding
 // listings only, without approval, the Hostaway ID or removal.
 
@@ -85,9 +86,11 @@ function ApproveForm({ p }: { p: PropertyDetail }) {
     const t = value.trim();
     if (!/^\d+$/.test(t)) return setProblem('Enter the Hostaway listing ID, digits only.');
     setProblem(null);
-    approve.mutate(Number(t));
+    approve.mutate({ hostawayId: Number(t) });
   };
   const changing = pending !== null;
+  // The ID is already an existing listing here: say which, and let the admin confirm the merge.
+  const existing = approve.error instanceof ApiError && approve.error.code === 'existing-listing' ? approve.error.message : null;
   return (
     <form onSubmit={submit} className="flex flex-col gap-2" noValidate>
       <label htmlFor={id} className="text-sm text-ink">
@@ -101,7 +104,10 @@ function ApproveForm({ p }: { p: PropertyDetail }) {
             inputMode="numeric"
             autoComplete="off"
             value={value}
-            onChange={(e) => setValue(e.target.value)}
+            onChange={(e) => {
+              setValue(e.target.value);
+              if (approve.error) approve.reset();
+            }}
             placeholder="e.g. 603123"
             className="tabular h-9 text-sm"
           />
@@ -110,13 +116,33 @@ function ApproveForm({ p }: { p: PropertyDetail }) {
           {changing ? 'Change ID' : 'Approve'}
         </Button>
       </span>
-      <Notice>{problem ?? approve.error?.message}</Notice>
+      {existing && !problem ? (
+        <div role="alert" className="flex flex-col gap-2 border-l-2 border-bronze py-1 pl-3">
+          <p className="text-sm text-ink">{existing}</p>
+          <span className="flex flex-wrap items-center gap-3">
+            <Button
+              type="button"
+              variant="secondary"
+              busy={approve.isPending}
+              onClick={() => approve.mutate({ hostawayId: Number(value.trim()), confirmExisting: true })}
+              className="min-h-9"
+            >
+              Approve and merge
+            </Button>
+            <button type="button" onClick={() => approve.reset()} className="caps text-[0.625rem] text-bronze underline hover:text-ink">
+              Cancel
+            </button>
+          </span>
+        </div>
+      ) : (
+        <Notice>{problem ?? approve.error?.message}</Notice>
+      )}
     </form>
   );
 }
 
 /** The onboarding path, as two steps: fill in (everyone), then approve with the Hostaway ID (admins). */
-function OnboardingTools({ p }: { p: PropertyDetail }) {
+export function OnboardingTools({ p }: { p: PropertyDetail }) {
   const o = p.onboarding!;
   const isAdmin = useRole() === 'admin';
   const unapprove = useUnapprove(p.id);
@@ -325,7 +351,7 @@ export function RemoveButton({ p }: { p: PropertyDetail }) {
 /** A section at the bottom of the panel, styled and indexed like the field sections. */
 function ManageSection({ id, title, children }: { id: string; title: string; children: ReactNode }) {
   return (
-    <section id={`sec-${id}`} data-section={id} aria-labelledby={`h-${id}`} className="scroll-mt-6 pt-8">
+    <section id={`sec-${id}`} data-section={id} aria-labelledby={`h-${id}`} className="scroll-mt-6 pt-8 first:pt-2">
       <h3 id={`h-${id}`} className="font-display border-b border-hairline pb-2 text-[1.6rem] leading-tight font-semibold text-ink">
         {title}
       </h3>
@@ -334,19 +360,13 @@ function ManageSection({ id, title, children }: { id: string; title: string; chi
   );
 }
 
-/** The sections below the fields, in the panel's index: Onboarding (onboarding listings only), then Platforms. */
-export function manageSections(p: PropertyDetail): { key: string; label: string }[] {
-  return [...(p.onboarding ? [{ key: 'onboarding', label: 'Onboarding' }] : []), { key: 'platforms', label: 'Platforms' }];
-}
 
 export function AdminTools({ p }: { p: PropertyDetail }) {
   const platforms = useAdminPlatforms();
   const active = (platforms.data ?? []).filter((x) => !x.retired);
 
   return (
-    <>
-      {p.onboarding && <OnboardingTools key={`${p.name}-${p.onboarding.pendingHostawayId}`} p={p} />}
-      <ManageSection id="platforms" title="Platforms">
+    <ManageSection id="platforms" title="Platforms">
         <p className="mt-3 text-[0.8125rem] text-muted">
           {p.hostawayId === null
             ? 'Where the property is listed so far. Tick each platform, with its link if you have it.'
@@ -357,7 +377,6 @@ export function AdminTools({ p }: { p: PropertyDetail }) {
             <PlatformRow key={`${x.key}-${p.platforms.map((b) => b.key + b.url).join()}`} p={p} platformKey={x.key} name={x.name} kind={x.kind} />
           ))}
         </ul>
-      </ManageSection>
-    </>
+    </ManageSection>
   );
 }

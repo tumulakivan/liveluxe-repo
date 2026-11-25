@@ -155,7 +155,9 @@ export function useAllTags() {
 
 /** Approve with the Hostaway listing ID, in one step. */
 export const useApprove = (id: number) =>
-  usePropertyWrite((hostawayId: number) => request<PropertyDetail>(`/api/admin/properties/${id}/approve`, json('POST', { hostawayId })));
+  usePropertyWrite(({ hostawayId, confirmExisting }: { hostawayId: number; confirmExisting?: boolean }) =>
+    request<PropertyDetail>(`/api/admin/properties/${id}/approve`, json('POST', { hostawayId, confirmExisting })),
+  );
 
 export const useUnapprove = (id: number) =>
   usePropertyWrite(() => request<PropertyDetail>(`/api/admin/properties/${id}/unapprove`, json('POST')));
